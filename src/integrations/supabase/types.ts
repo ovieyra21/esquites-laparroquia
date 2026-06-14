@@ -340,7 +340,9 @@ export type Database = {
       sale_items: {
         Row: {
           id: string
+          product_emoji: string | null
           product_id: string | null
+          product_name: string | null
           quantity: number | null
           sale_id: string | null
           total: number | null
@@ -348,7 +350,9 @@ export type Database = {
         }
         Insert: {
           id?: string
+          product_emoji?: string | null
           product_id?: string | null
+          product_name?: string | null
           quantity?: number | null
           sale_id?: string | null
           total?: number | null
@@ -356,7 +360,9 @@ export type Database = {
         }
         Update: {
           id?: string
+          product_emoji?: string | null
           product_id?: string | null
+          product_name?: string | null
           quantity?: number | null
           sale_id?: string | null
           total?: number | null
