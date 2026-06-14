@@ -14,43 +14,103 @@ export type Database = {
   }
   public: {
     Tables: {
+      cash_movements: {
+        Row: {
+          amount: number | null
+          cash_register_id: string | null
+          concept: string | null
+          created_at: string | null
+          id: string
+          notes: string | null
+          payment_method: string | null
+          type: string
+          user_id: string | null
+        }
+        Insert: {
+          amount?: number | null
+          cash_register_id?: string | null
+          concept?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          payment_method?: string | null
+          type?: string
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number | null
+          cash_register_id?: string | null
+          concept?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          payment_method?: string | null
+          type?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cash_movements_cash_register_id_fkey"
+            columns: ["cash_register_id"]
+            isOneToOne: false
+            referencedRelation: "cash_register"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cash_register: {
         Row: {
           closed_at: string | null
           closing_amount: number | null
+          created_at: string | null
+          difference: number | null
+          expected_amount: number | null
           id: string
-          opened_at: string | null
-          opening_amount: number | null
-          status: string | null
+          notes: string | null
+          opened_at: string
+          opening_amount: number
+          real_amount: number | null
+          status: string
+          total_sales_card: number | null
+          total_sales_cash: number | null
+          total_sales_transfer: number | null
           user_id: string | null
         }
         Insert: {
           closed_at?: string | null
           closing_amount?: number | null
+          created_at?: string | null
+          difference?: number | null
+          expected_amount?: number | null
           id?: string
-          opened_at?: string | null
-          opening_amount?: number | null
-          status?: string | null
+          notes?: string | null
+          opened_at?: string
+          opening_amount?: number
+          real_amount?: number | null
+          status?: string
+          total_sales_card?: number | null
+          total_sales_cash?: number | null
+          total_sales_transfer?: number | null
           user_id?: string | null
         }
         Update: {
           closed_at?: string | null
           closing_amount?: number | null
+          created_at?: string | null
+          difference?: number | null
+          expected_amount?: number | null
           id?: string
-          opened_at?: string | null
-          opening_amount?: number | null
-          status?: string | null
+          notes?: string | null
+          opened_at?: string
+          opening_amount?: number
+          real_amount?: number | null
+          status?: string
+          total_sales_card?: number | null
+          total_sales_cash?: number | null
+          total_sales_transfer?: number | null
           user_id?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "cash_register_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       categories: {
         Row: {
@@ -94,30 +154,6 @@ export type Database = {
           filename?: string | null
           id?: string
           uploaded_at?: string | null
-        }
-        Relationships: []
-      }
-      expenses: {
-        Row: {
-          amount: number | null
-          concept: string | null
-          created_at: string | null
-          id: string
-          notes: string | null
-        }
-        Insert: {
-          amount?: number | null
-          concept?: string | null
-          created_at?: string | null
-          id?: string
-          notes?: string | null
-        }
-        Update: {
-          amount?: number | null
-          concept?: string | null
-          created_at?: string | null
-          id?: string
-          notes?: string | null
         }
         Relationships: []
       }
@@ -245,6 +281,33 @@ export type Database = {
           },
         ]
       }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       sale_item_modifiers: {
         Row: {
           extra_price: number | null
@@ -318,7 +381,11 @@ export type Database = {
       }
       sales: {
         Row: {
+          cancelled: boolean
+          cancelled_at: string | null
+          cancelled_by: string | null
           cash_received: number | null
+          cash_register_id: string | null
           change_amount: number | null
           created_at: string | null
           folio: number
@@ -327,9 +394,14 @@ export type Database = {
           subtotal: number | null
           tax: number | null
           total: number | null
+          user_id: string | null
         }
         Insert: {
+          cancelled?: boolean
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           cash_received?: number | null
+          cash_register_id?: string | null
           change_amount?: number | null
           created_at?: string | null
           folio?: number
@@ -338,9 +410,14 @@ export type Database = {
           subtotal?: number | null
           tax?: number | null
           total?: number | null
+          user_id?: string | null
         }
         Update: {
+          cancelled?: boolean
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           cash_received?: number | null
+          cash_register_id?: string | null
           change_amount?: number | null
           created_at?: string | null
           folio?: number
@@ -349,63 +426,99 @@ export type Database = {
           subtotal?: number | null
           tax?: number | null
           total?: number | null
+          user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "sales_cash_register_id_fkey"
+            columns: ["cash_register_id"]
+            isOneToOne: false
+            referencedRelation: "cash_register"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       settings: {
         Row: {
           address: string | null
+          auto_cut: boolean | null
+          auto_print: boolean | null
           business_name: string | null
+          footer_message: string | null
           id: string
           logo: string | null
+          open_drawer: boolean | null
           phone: string | null
+          printer_enabled: boolean | null
+          printer_ip: string | null
+          printer_port: number | null
+          printer_width: number | null
           qr_url: string | null
+          rfc: string | null
           slogan: string | null
           tax: number | null
+          updated_at: string | null
         }
         Insert: {
           address?: string | null
+          auto_cut?: boolean | null
+          auto_print?: boolean | null
           business_name?: string | null
+          footer_message?: string | null
           id?: string
           logo?: string | null
+          open_drawer?: boolean | null
           phone?: string | null
+          printer_enabled?: boolean | null
+          printer_ip?: string | null
+          printer_port?: number | null
+          printer_width?: number | null
           qr_url?: string | null
+          rfc?: string | null
           slogan?: string | null
           tax?: number | null
+          updated_at?: string | null
         }
         Update: {
           address?: string | null
+          auto_cut?: boolean | null
+          auto_print?: boolean | null
           business_name?: string | null
+          footer_message?: string | null
           id?: string
           logo?: string | null
+          open_drawer?: boolean | null
           phone?: string | null
+          printer_enabled?: boolean | null
+          printer_ip?: string | null
+          printer_port?: number | null
+          printer_width?: number | null
           qr_url?: string | null
+          rfc?: string | null
           slogan?: string | null
           tax?: number | null
+          updated_at?: string | null
         }
         Relationships: []
       }
-      users: {
+      user_roles: {
         Row: {
-          created_at: string | null
-          email: string | null
-          full_name: string | null
+          created_at: string
           id: string
-          role: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
         }
         Insert: {
-          created_at?: string | null
-          email?: string | null
-          full_name?: string | null
+          created_at?: string
           id?: string
-          role?: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
         }
         Update: {
-          created_at?: string | null
-          email?: string | null
-          full_name?: string | null
+          created_at?: string
           id?: string
-          role?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
         }
         Relationships: []
       }
@@ -414,10 +527,24 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      current_user_has_any_role: {
+        Args: { _roles: Database["public"]["Enums"]["app_role"][] }
+        Returns: boolean
+      }
+      get_cash_register_summary: {
+        Args: { _register_id: string }
+        Returns: Json
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "cajero" | "supervisor"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -544,6 +671,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "cajero", "supervisor"],
+    },
   },
 } as const
