@@ -3,7 +3,7 @@ import { useSales } from "@/store/sales";
 import { fmt } from "@/store/cart";
 import { TrendingUp, Receipt, DollarSign, Award } from "lucide-react";
 
-export const Route = createFileRoute("/dashboard")({ component: Dashboard });
+export const Route = createFileRoute("/_authenticated/dashboard")({ component: Dashboard });
 
 function Dashboard() {
   const sales = useSales((s) => s.sales).filter((s) => !s.cancelled);
