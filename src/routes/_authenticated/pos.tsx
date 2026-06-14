@@ -10,7 +10,7 @@ import { ProductModifierDialog } from "@/components/ProductModifierDialog";
 import { CheckoutDialog } from "@/components/CheckoutDialog";
 import { ReceiptDialog } from "@/components/ReceiptDialog";
 
-export const Route = createFileRoute("/pos")({
+export const Route = createFileRoute("/_authenticated/pos")({
   head: () => ({ meta: [{ title: "Punto de Venta · Esquites La Parroquia" }] }),
   component: POSPage,
 });
