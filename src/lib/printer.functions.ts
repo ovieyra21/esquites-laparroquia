@@ -105,7 +105,9 @@ export const printSaleTicket = createServerFn({ method: "POST" })
     if (!settings.printer_ip) throw new Error("Falta la IP de la impresora.");
     if (!sale) throw new Error("Venta no encontrada.");
 
-    const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", sale.user_id).maybeSingle();
+    const { data: profile } = sale.user_id
+      ? await supabase.from("profiles").select("full_name").eq("id", sale.user_id).maybeSingle()
+      : { data: null as { full_name: string | null } | null };
 
     const buffer = await buildTicketBuffer({
       settings,
