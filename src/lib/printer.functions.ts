@@ -96,8 +96,9 @@ export const printSaleTicket = createServerFn({ method: "POST" })
   .inputValidator((input) => printInput.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const [{ data: settings }, { data: sale }] = await Promise.all([
-      supabase.from("settings").select("*").limit(1).maybeSingle(),
+      supabaseAdmin.from("settings").select("*").limit(1).maybeSingle(),
       supabase.from("sales").select("*, sale_items(*, sale_item_modifiers(*))").eq("id", data.saleId).single(),
     ]);
     if (!settings) throw new Error("Configuración no encontrada.");
@@ -105,7 +106,9 @@ export const printSaleTicket = createServerFn({ method: "POST" })
     if (!settings.printer_ip) throw new Error("Falta la IP de la impresora.");
     if (!sale) throw new Error("Venta no encontrada.");
 
-    const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", sale.user_id).maybeSingle();
+    const { data: profile } = sale.user_id
+      ? await supabase.from("profiles").select("full_name").eq("id", sale.user_id).maybeSingle()
+      : { data: null as { full_name: string | null } | null };
 
     const buffer = await buildTicketBuffer({
       settings,
@@ -134,8 +137,9 @@ export const testPrinter = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => testInput.parse(input))
   .handler(async ({ context }) => {
-    const { supabase } = context;
-    const { data: settings } = await supabase.from("settings").select("*").limit(1).maybeSingle();
+    const { supabase: _ } = context;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: settings } = await supabaseAdmin.from("settings").select("*").limit(1).maybeSingle();
     if (!settings?.printer_ip) throw new Error("Configura la IP de la impresora primero.");
 
     const buffer = await buildTicketBuffer({

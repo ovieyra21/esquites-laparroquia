@@ -530,7 +530,30 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      settings_public: {
+        Row: {
+          business_name: string | null
+          footer_message: string | null
+          id: string | null
+          slogan: string | null
+          tax: number | null
+        }
+        Insert: {
+          business_name?: string | null
+          footer_message?: string | null
+          id?: string | null
+          slogan?: string | null
+          tax?: number | null
+        }
+        Update: {
+          business_name?: string | null
+          footer_message?: string | null
+          id?: string | null
+          slogan?: string | null
+          tax?: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       current_user_has_any_role: {
