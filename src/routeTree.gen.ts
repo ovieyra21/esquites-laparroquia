@@ -9,22 +9,18 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as MenuRouteImport } from './routes/menu'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as MIdRouteImport } from './routes/m.$id'
 import { Route as AuthenticatedProductosRouteImport } from './routes/_authenticated/productos'
 import { Route as AuthenticatedPosRouteImport } from './routes/_authenticated/pos'
+import { Route as AuthenticatedMenuRouteImport } from './routes/_authenticated/menu'
 import { Route as AuthenticatedHistorialRouteImport } from './routes/_authenticated/historial'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedConfiguracionRouteImport } from './routes/_authenticated/configuracion'
 import { Route as AuthenticatedCajaRouteImport } from './routes/_authenticated/caja'
 
-const MenuRoute = MenuRouteImport.update({
-  id: '/menu',
-  path: '/menu',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
@@ -39,6 +35,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MIdRoute = MIdRouteImport.update({
+  id: '/m/$id',
+  path: '/m/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedProductosRoute = AuthenticatedProductosRouteImport.update({
   id: '/productos',
   path: '/productos',
@@ -47,6 +48,11 @@ const AuthenticatedProductosRoute = AuthenticatedProductosRouteImport.update({
 const AuthenticatedPosRoute = AuthenticatedPosRouteImport.update({
   id: '/pos',
   path: '/pos',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedMenuRoute = AuthenticatedMenuRouteImport.update({
+  id: '/menu',
+  path: '/menu',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedHistorialRoute = AuthenticatedHistorialRouteImport.update({
@@ -74,91 +80,90 @@ const AuthenticatedCajaRoute = AuthenticatedCajaRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
-  '/menu': typeof MenuRoute
   '/caja': typeof AuthenticatedCajaRoute
   '/configuracion': typeof AuthenticatedConfiguracionRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/historial': typeof AuthenticatedHistorialRoute
+  '/menu': typeof AuthenticatedMenuRoute
   '/pos': typeof AuthenticatedPosRoute
   '/productos': typeof AuthenticatedProductosRoute
+  '/m/$id': typeof MIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
-  '/menu': typeof MenuRoute
   '/caja': typeof AuthenticatedCajaRoute
   '/configuracion': typeof AuthenticatedConfiguracionRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/historial': typeof AuthenticatedHistorialRoute
+  '/menu': typeof AuthenticatedMenuRoute
   '/pos': typeof AuthenticatedPosRoute
   '/productos': typeof AuthenticatedProductosRoute
+  '/m/$id': typeof MIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
-  '/menu': typeof MenuRoute
   '/_authenticated/caja': typeof AuthenticatedCajaRoute
   '/_authenticated/configuracion': typeof AuthenticatedConfiguracionRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/historial': typeof AuthenticatedHistorialRoute
+  '/_authenticated/menu': typeof AuthenticatedMenuRoute
   '/_authenticated/pos': typeof AuthenticatedPosRoute
   '/_authenticated/productos': typeof AuthenticatedProductosRoute
+  '/m/$id': typeof MIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/auth'
-    | '/menu'
     | '/caja'
     | '/configuracion'
     | '/dashboard'
     | '/historial'
+    | '/menu'
     | '/pos'
     | '/productos'
+    | '/m/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/auth'
-    | '/menu'
     | '/caja'
     | '/configuracion'
     | '/dashboard'
     | '/historial'
+    | '/menu'
     | '/pos'
     | '/productos'
+    | '/m/$id'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
-    | '/menu'
     | '/_authenticated/caja'
     | '/_authenticated/configuracion'
     | '/_authenticated/dashboard'
     | '/_authenticated/historial'
+    | '/_authenticated/menu'
     | '/_authenticated/pos'
     | '/_authenticated/productos'
+    | '/m/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
-  MenuRoute: typeof MenuRoute
+  MIdRoute: typeof MIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/menu': {
-      id: '/menu'
-      path: '/menu'
-      fullPath: '/menu'
-      preLoaderRoute: typeof MenuRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/auth': {
       id: '/auth'
       path: '/auth'
@@ -180,6 +185,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/m/$id': {
+      id: '/m/$id'
+      path: '/m/$id'
+      fullPath: '/m/$id'
+      preLoaderRoute: typeof MIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/productos': {
       id: '/_authenticated/productos'
       path: '/productos'
@@ -192,6 +204,13 @@ declare module '@tanstack/react-router' {
       path: '/pos'
       fullPath: '/pos'
       preLoaderRoute: typeof AuthenticatedPosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/menu': {
+      id: '/_authenticated/menu'
+      path: '/menu'
+      fullPath: '/menu'
+      preLoaderRoute: typeof AuthenticatedMenuRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/historial': {
@@ -230,6 +249,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedConfiguracionRoute: typeof AuthenticatedConfiguracionRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedHistorialRoute: typeof AuthenticatedHistorialRoute
+  AuthenticatedMenuRoute: typeof AuthenticatedMenuRoute
   AuthenticatedPosRoute: typeof AuthenticatedPosRoute
   AuthenticatedProductosRoute: typeof AuthenticatedProductosRoute
 }
@@ -239,6 +259,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedConfiguracionRoute: AuthenticatedConfiguracionRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedHistorialRoute: AuthenticatedHistorialRoute,
+  AuthenticatedMenuRoute: AuthenticatedMenuRoute,
   AuthenticatedPosRoute: AuthenticatedPosRoute,
   AuthenticatedProductosRoute: AuthenticatedProductosRoute,
 }
@@ -250,7 +271,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
-  MenuRoute: MenuRoute,
+  MIdRoute: MIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
