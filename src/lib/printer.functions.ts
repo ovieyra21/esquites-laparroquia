@@ -76,7 +76,9 @@ const padRight = (s: string, len: number) => (s.length >= len ? s.slice(0, len) 
 async function sendToPrinter(ip: string, port: number, data: Uint8Array): Promise<void> {
   let connect: ((opts: { hostname: string; port: number }) => any) | undefined;
   try {
-    ({ connect } = await import("cloudflare:sockets" as any));
+    // Obscure the specifier so Vite/Rollup doesn't try to resolve it at build time.
+    const mod = "cloudflare" + ":" + "sockets";
+    ({ connect } = await (Function("s", "return import(s)")(mod) as Promise<any>));
   } catch {
     throw new Error("La impresión por red no está disponible en este entorno. Usa la impresión por navegador.");
   }
