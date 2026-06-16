@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { getLogoRaster } from "./printer-logo";
 
 const printInput = z.object({ saleId: z.string().uuid() });
 const testInput = z.object({});
@@ -34,11 +35,16 @@ async function buildTicketBuffer(opts: {
 }): Promise<Uint8Array> {
   const EscPosEncoder = (await import("esc-pos-encoder")).default;
   const encoder = new EscPosEncoder();
-  const width = opts.settings.printer_width === 58 ? 32 : 48;
+  const widthMm = opts.settings.printer_width === 58 ? 58 : 80;
+  const width = widthMm === 58 ? 32 : 48;
   const date = new Date(opts.createdAt);
   const dateStr = date.toLocaleString("es-MX", { dateStyle: "short", timeStyle: "medium" });
 
-  let e = encoder.initialize().codepage("cp437").align("center")
+  // Logo raster, centered & sized to printer width
+  const logoRaster = Array.from(getLogoRaster(widthMm));
+
+  let e = encoder.initialize().align("center").raw(logoRaster).newline()
+    .codepage("cp437")
     .bold(true).size(1, 1).line(opts.settings.business_name ?? "Esquites La Parroquia").bold(false).size(0, 0);
   if (opts.settings.slogan) e = e.line(opts.settings.slogan);
   if (opts.settings.address) e = e.line(opts.settings.address);
