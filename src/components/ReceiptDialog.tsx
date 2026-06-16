@@ -5,6 +5,7 @@ import { fmt } from "@/store/cart";
 import type { Sale } from "@/store/sales";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import logoTicket from "@/assets/logo-ticket.png";
 
 export function ReceiptDialog({
   sale,
@@ -23,8 +24,7 @@ export function ReceiptDialog({
       <DialogContent className="bg-card gold-border max-w-md p-0 overflow-hidden">
         <div className="bg-white text-black p-6 font-mono text-sm print:shadow-none" id="ticket-print">
           <div className="text-center mb-3">
-            <div className="font-display text-2xl font-bold">Esquites</div>
-            <div className="font-display text-lg -mt-1">La Parroquia</div>
+            <img src={logoTicket} alt="Esquites La Parroquia" className="mx-auto w-32 h-32 object-contain mb-1" />
             <div className="text-xs">Acámbaro, Gto.</div>
           </div>
           <div className="border-t border-dashed border-black/40 my-2" />
