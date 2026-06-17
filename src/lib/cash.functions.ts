@@ -59,6 +59,7 @@ export const closeCashRegister = createServerFn({ method: "POST" })
         expected_amount: expected,
         difference: diff,
         notes: data.notes ?? null,
+        closing_breakdown: data.breakdown ?? null,
         total_sales_cash: s?.sales_cash ?? 0,
         total_sales_card: s?.sales_card ?? 0,
         total_sales_transfer: s?.sales_transfer ?? 0,

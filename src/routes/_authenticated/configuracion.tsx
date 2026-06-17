@@ -26,6 +26,7 @@ type Settings = {
   phone: string | null;
   rfc: string | null;
   footer_message: string | null;
+  whatsapp_number: string | null;
   tax: number | null;
   printer_enabled: boolean | null;
   printer_ip: string | null;
@@ -41,6 +42,7 @@ const defaults: Settings = {
   slogan: "El sabor que nos une",
   address: "", phone: "", rfc: "",
   footer_message: "¡Gracias por su compra!",
+  whatsapp_number: "",
   tax: 0,
   printer_enabled: false, printer_ip: "", printer_port: 9100, printer_width: 80,
   auto_print: false, auto_cut: true, open_drawer: false,
@@ -79,6 +81,7 @@ function ConfigPage() {
           phone: s.phone ?? undefined,
           rfc: s.rfc ?? undefined,
           footer_message: s.footer_message ?? undefined,
+          whatsapp_number: s.whatsapp_number ?? undefined,
           tax: s.tax ?? 0,
           printer_enabled: !!s.printer_enabled,
           printer_ip: s.printer_ip ?? undefined,
@@ -144,6 +147,12 @@ function ConfigPage() {
               <div>
                 <Label>Teléfono</Label>
                 <Input value={s.phone ?? ""} maxLength={50} onChange={(e) => set("phone", e.target.value)} />
+              </div>
+              <div>
+                <Label>WhatsApp para pedidos</Label>
+                <Input value={s.whatsapp_number ?? ""} maxLength={20} placeholder="524171234567"
+                  onChange={(e) => set("whatsapp_number", e.target.value)} />
+                <p className="text-[10px] text-muted-foreground mt-1">Solo dígitos, con código de país. Ej: 521…</p>
               </div>
               <div>
                 <Label>RFC</Label>
