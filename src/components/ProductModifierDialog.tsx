@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import type { Product } from "@/data/catalog";
+import type { Product } from "@/lib/catalog-types";
 import { useCart, type CartItem } from "@/store/cart";
 import { fmt } from "@/store/cart";
 
