@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { Product } from "@/data/catalog";
+import type { Product } from "@/lib/catalog-types";
 
 export type CartItem = {
   uid: string;
@@ -29,20 +29,12 @@ export const useCart = create<CartState>((set) => ({
     set((s) => ({
       items: [
         ...s.items,
-        {
-          uid: crypto.randomUUID(),
-          product,
-          quantity: 1,
-          modifiers,
-          unitPrice: product.price,
-        },
+        { uid: crypto.randomUUID(), product, quantity: 1, modifiers, unitPrice: product.price },
       ],
     })),
   removeItem: (uid) => set((s) => ({ items: s.items.filter((i) => i.uid !== uid) })),
   setQty: (uid, qty) =>
-    set((s) => ({
-      items: s.items.map((i) => (i.uid === uid ? { ...i, quantity: Math.max(1, qty) } : i)),
-    })),
+    set((s) => ({ items: s.items.map((i) => (i.uid === uid ? { ...i, quantity: Math.max(1, qty) } : i)) })),
   setDiscount: (n) => set({ discount: Math.max(0, n) }),
   setTaxRate: (n) => set({ taxRate: Math.max(0, n) }),
   clear: () => set({ items: [], discount: 0 }),

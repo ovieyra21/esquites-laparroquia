@@ -62,6 +62,7 @@ export type Database = {
         Row: {
           closed_at: string | null
           closing_amount: number | null
+          closing_breakdown: Json | null
           created_at: string | null
           difference: number | null
           expected_amount: number | null
@@ -69,6 +70,7 @@ export type Database = {
           notes: string | null
           opened_at: string
           opening_amount: number
+          opening_breakdown: Json | null
           real_amount: number | null
           status: string
           total_sales_card: number | null
@@ -79,6 +81,7 @@ export type Database = {
         Insert: {
           closed_at?: string | null
           closing_amount?: number | null
+          closing_breakdown?: Json | null
           created_at?: string | null
           difference?: number | null
           expected_amount?: number | null
@@ -86,6 +89,7 @@ export type Database = {
           notes?: string | null
           opened_at?: string
           opening_amount?: number
+          opening_breakdown?: Json | null
           real_amount?: number | null
           status?: string
           total_sales_card?: number | null
@@ -96,6 +100,7 @@ export type Database = {
         Update: {
           closed_at?: string | null
           closing_amount?: number | null
+          closing_breakdown?: Json | null
           created_at?: string | null
           difference?: number | null
           expected_amount?: number | null
@@ -103,6 +108,7 @@ export type Database = {
           notes?: string | null
           opened_at?: string
           opening_amount?: number
+          opening_breakdown?: Json | null
           real_amount?: number | null
           status?: string
           total_sales_card?: number | null
@@ -244,8 +250,10 @@ export type Database = {
           created_at: string | null
           description: string | null
           display_order: number | null
+          emoji: string | null
           id: string
           image_url: string | null
+          includes: string[] | null
           name: string
           price: number
         }
@@ -255,8 +263,10 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           display_order?: number | null
+          emoji?: string | null
           id?: string
           image_url?: string | null
+          includes?: string[] | null
           name: string
           price: number
         }
@@ -266,8 +276,10 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           display_order?: number | null
+          emoji?: string | null
           id?: string
           image_url?: string | null
+          includes?: string[] | null
           name?: string
           price?: number
         }
@@ -464,6 +476,7 @@ export type Database = {
           slogan: string | null
           tax: number | null
           updated_at: string | null
+          whatsapp_number: string | null
         }
         Insert: {
           address?: string | null
@@ -484,6 +497,7 @@ export type Database = {
           slogan?: string | null
           tax?: number | null
           updated_at?: string | null
+          whatsapp_number?: string | null
         }
         Update: {
           address?: string | null
@@ -504,6 +518,7 @@ export type Database = {
           slogan?: string | null
           tax?: number | null
           updated_at?: string | null
+          whatsapp_number?: string | null
         }
         Relationships: []
       }

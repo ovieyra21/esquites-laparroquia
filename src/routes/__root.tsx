@@ -3,6 +3,7 @@ import { Outlet, createRootRouteWithContext, HeadContent, Scripts } from "@tanst
 import type { ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { Sidebar } from "@/components/Sidebar";
+import { ThemeProvider } from "@/components/ThemeProvider";
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
@@ -42,7 +43,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="es" className="dark">
-      <head><HeadContent /></head>
+      <head>
+        <HeadContent />
+        <script dangerouslySetInnerHTML={{ __html: `try{var t=localStorage.getItem('theme');var c=document.documentElement.classList;if(t==='light')c.remove('dark');else c.add('dark');}catch(e){}` }} />
+      </head>
       <body>{children}<Scripts /></body>
     </html>
   );
@@ -52,10 +56,12 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="flex min-h-screen w-full">
-        <Sidebar />
-        <main className="flex-1 min-w-0"><Outlet /></main>
-      </div>
+      <ThemeProvider>
+        <div className="flex min-h-screen w-full">
+          <Sidebar />
+          <main className="flex-1 min-w-0"><Outlet /></main>
+        </div>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }

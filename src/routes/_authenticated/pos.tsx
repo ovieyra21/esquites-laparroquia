@@ -1,9 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Search, Trash2, Plus, Minus, X } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { Search, Trash2, Plus, Minus, X, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { CATEGORIES, PRODUCTS, type CategoryId, type Product } from "@/data/catalog";
+import { listCategories, listProducts } from "@/lib/products.functions";
+import { inferModifiers, type Product } from "@/lib/catalog-types";
 import { useCart, calcTotals, fmt } from "@/store/cart";
 import { useSales, nextFolio, type PaymentMethod } from "@/store/sales";
 import { ProductModifierDialog } from "@/components/ProductModifierDialog";
@@ -16,7 +19,16 @@ export const Route = createFileRoute("/_authenticated/pos")({
 });
 
 function POSPage() {
-  const [category, setCategory] = useState<CategoryId>("fritura");
+  const getCats = useServerFn(listCategories);
+  const getProds = useServerFn(listProducts);
+
+  const catsQ = useQuery({ queryKey: ["pos-cats"], queryFn: () => getCats() });
+  const prodsQ = useQuery({ queryKey: ["pos-prods"], queryFn: () => getProds() });
+
+  const categories = catsQ.data ?? [];
+  const allProducts = (prodsQ.data ?? []) as any[];
+
+  const [categoryId, setCategoryId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [modProduct, setModProduct] = useState<Product | null>(null);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
@@ -26,12 +38,24 @@ function POSPage() {
   const addSale = useSales((s) => s.addSale);
   const totals = calcTotals(cart.items, cart.discount, cart.taxRate);
 
-  const products = useMemo(() => {
+  const products: Product[] = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return PRODUCTS.filter(
-      (p) => (q ? p.name.toLowerCase().includes(q) : p.category === category),
-    );
-  }, [category, query]);
+    const effectiveCat = categoryId ?? categories[0]?.id ?? null;
+    return allProducts
+      .filter((p) => p.active !== false)
+      .filter((p) => (q ? p.name.toLowerCase().includes(q) : effectiveCat ? p.category_id === effectiveCat : true))
+      .map((p) => ({
+        id: p.id,
+        name: p.name,
+        price: Number(p.price),
+        category_id: p.category_id,
+        description: p.description,
+        includes: p.includes,
+        emoji: p.emoji ?? "🌽",
+        image_url: p.image_url,
+        modifiers: inferModifiers({ name: p.name, category_name: p.categories?.name }),
+      }));
+  }, [allProducts, categoryId, query, categories]);
 
   const onProductClick = (p: Product) => {
     if (p.modifiers && p.modifiers.length) setModProduct(p);
@@ -58,9 +82,14 @@ function POSPage() {
     cart.clear();
   };
 
+  if (catsQ.isLoading || prodsQ.isLoading) {
+    return <div className="flex items-center justify-center h-screen text-muted-foreground"><Loader2 className="size-6 animate-spin" /></div>;
+  }
+
+  const activeCat = categoryId ?? categories[0]?.id ?? null;
+
   return (
     <div className="flex h-screen w-full">
-      {/* LEFT */}
       <section className="flex-1 flex flex-col p-4 lg:p-6 min-w-0">
         <header className="flex items-center gap-3 mb-4">
           <div className="relative flex-1">
@@ -75,19 +104,19 @@ function POSPage() {
         </header>
 
         <div className="flex gap-2 mb-4 overflow-x-auto pb-1 scrollbar-thin">
-          {CATEGORIES.map((c) => {
-            const active = c.id === category && !query;
+          {categories.map((c: any) => {
+            const active = c.id === activeCat && !query;
             return (
               <button
                 key={c.id}
-                onClick={() => { setQuery(""); setCategory(c.id); }}
+                onClick={() => { setQuery(""); setCategoryId(c.id); }}
                 className={`px-4 py-2.5 rounded-xl whitespace-nowrap text-sm font-semibold transition ${
                   active
                     ? "bg-gradient-to-r from-gold to-gold-soft text-primary-foreground shadow-[var(--shadow-gold)]"
                     : "bg-surface text-muted-foreground hover:text-foreground gold-border"
                 }`}
               >
-                <span className="mr-1.5">{c.emoji}</span>{c.label}
+                <span className="mr-1.5">{c.icon ?? "🌽"}</span>{c.name}
               </button>
             );
           })}
@@ -116,7 +145,6 @@ function POSPage() {
         </div>
       </section>
 
-      {/* RIGHT - CART */}
       <aside className="w-[380px] lg:w-[420px] shrink-0 bg-surface border-l border-border flex flex-col">
         <div className="p-5 border-b border-border">
           <h2 className="font-display text-xl">Carrito de venta</h2>

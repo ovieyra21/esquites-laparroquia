@@ -41,6 +41,49 @@
 
 :root {
   --radius: 1rem;
+  /* Light theme (default) */
+  --background: oklch(0.99 0.005 80);
+  --foreground: oklch(0.18 0.01 60);
+  --surface: oklch(0.97 0.008 80);
+  --surface-2: oklch(0.94 0.01 80);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.18 0.01 60);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.18 0.01 60);
+  --primary: oklch(0.62 0.14 75);
+  --primary-foreground: oklch(0.99 0.005 80);
+  --secondary: oklch(0.78 0.13 82);
+  --secondary-foreground: oklch(0.18 0.01 60);
+  --muted: oklch(0.94 0.01 80);
+  --muted-foreground: oklch(0.45 0.02 70);
+  --accent: oklch(0.92 0.03 80);
+  --accent-foreground: oklch(0.18 0.01 60);
+  --destructive: oklch(0.58 0.22 25);
+  --destructive-foreground: oklch(0.99 0 0);
+  --success: oklch(0.55 0.16 145);
+  --success-foreground: oklch(0.99 0 0);
+  --border: oklch(0.62 0.08 75 / 35%);
+  --input: oklch(0.62 0.08 75 / 35%);
+  --ring: oklch(0.62 0.14 75);
+  --gold: oklch(0.62 0.14 75);
+  --gold-soft: oklch(0.72 0.14 82);
+  --sidebar: oklch(0.97 0.008 80);
+  --sidebar-foreground: oklch(0.18 0.01 60);
+  --sidebar-primary: oklch(0.62 0.14 75);
+  --sidebar-primary-foreground: oklch(0.99 0.005 80);
+  --sidebar-accent: oklch(0.93 0.02 80);
+  --sidebar-accent-foreground: oklch(0.18 0.01 60);
+  --sidebar-border: oklch(0.62 0.08 75 / 30%);
+  --sidebar-ring: oklch(0.62 0.14 75);
+
+  --gradient-gold: linear-gradient(135deg, oklch(0.72 0.14 82), oklch(0.58 0.14 70));
+  --gradient-surface: linear-gradient(180deg, oklch(0.98 0.005 80), oklch(0.94 0.01 80));
+  --shadow-gold: 0 10px 40px -10px oklch(0.62 0.14 75 / 0.35);
+  --shadow-soft: 0 8px 24px -8px oklch(0 0 0 / 0.15);
+}
+
+.dark {
+  color-scheme: dark;
   --background: oklch(0.16 0.005 60);
   --foreground: oklch(0.97 0.01 80);
   --surface: oklch(0.20 0.008 60);
@@ -74,14 +117,11 @@
   --sidebar-accent-foreground: oklch(0.97 0.01 80);
   --sidebar-border: oklch(0.30 0.01 70 / 50%);
   --sidebar-ring: oklch(0.78 0.13 82);
-
   --gradient-gold: linear-gradient(135deg, oklch(0.85 0.15 88), oklch(0.72 0.14 75));
   --gradient-surface: linear-gradient(180deg, oklch(0.22 0.01 60), oklch(0.18 0.005 60));
   --shadow-gold: 0 10px 40px -10px oklch(0.78 0.13 82 / 0.35);
   --shadow-soft: 0 8px 24px -8px oklch(0 0 0 / 0.5);
 }
-
-.dark { color-scheme: dark; }
 
 @layer base {
   * { border-color: var(--color-border); }

@@ -16,6 +16,7 @@ const updateInput = z.object({
   phone: z.string().max(50).optional().nullable(),
   rfc: z.string().max(20).optional().nullable(),
   footer_message: z.string().max(255).optional().nullable(),
+  whatsapp_number: z.string().max(20).optional().nullable(),
   tax: z.number().min(0).max(100).optional(),
   printer_enabled: z.boolean().optional(),
   printer_ip: z.string().max(45).optional().nullable(),
