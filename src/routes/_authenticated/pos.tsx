@@ -1,14 +1,21 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
-import { Search, Trash2, Plus, Minus, X } from "lucide-react";
+import { useMemo, useState, useEffect } from "react";
+import { Search, Trash2, Plus, Minus, X, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { CATEGORIES, PRODUCTS, type CategoryId, type Product } from "@/data/catalog";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { getCatalog } from "@/lib/catalog.functions";
+import type { Product, Category } from "@/lib/catalog-types";
 import { useCart, calcTotals, fmt } from "@/store/cart";
 import { useSales, nextFolio, type PaymentMethod } from "@/store/sales";
 import { ProductModifierDialog } from "@/components/ProductModifierDialog";
 import { CheckoutDialog } from "@/components/CheckoutDialog";
 import { ReceiptDialog } from "@/components/ReceiptDialog";
+import { saveSale } from "@/lib/sales.functions";
+import { printSaleTicket } from "@/lib/printer.functions";
+import { crmApi } from "@/lib/crm.functions";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/pos")({
   head: () => ({ meta: [{ title: "Punto de Venta · Esquites La Parroquia" }] }),
@@ -16,46 +23,127 @@ export const Route = createFileRoute("/_authenticated/pos")({
 });
 
 function POSPage() {
-  const [category, setCategory] = useState<CategoryId>("fritura");
+  const getCat = useServerFn(getCatalog);
+  const { data: categories = [], isLoading } = useQuery({
+    queryKey: ["catalog"],
+    queryFn: () => getCat(),
+  });
+
+  const [categoryId, setCategoryId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [modProduct, setModProduct] = useState<Product | null>(null);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
-  const [lastSale, setLastSale] = useState<ReturnType<typeof useSales.getState>["sales"][number] | null>(null);
+  const [lastSale, setLastSale] = useState<any>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const cart = useCart();
   const addSale = useSales((s) => s.addSale);
   const totals = calcTotals(cart.items, cart.discount, cart.taxRate);
 
+  const { data: customers = [] } = useQuery({
+    queryKey: ["customers"],
+    queryFn: () => crmApi.getCustomers()
+  });
+
+  const [customerSearch, setCustomerSearch] = useState("");
+  const selectedCustomer = customers.find(c => c.id === cart.customerId);
+
   const products = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return PRODUCTS.filter(
-      (p) => (q ? p.name.toLowerCase().includes(q) : p.category === category),
-    );
-  }, [category, query]);
+    const allProducts = categories.flatMap(c => c.products);
+
+    if (q) return allProducts.filter(p => p.name.toLowerCase().includes(q));
+    return categories.find(c => c.id === categoryId)?.products ?? [];
+  }, [categories, categoryId, query]);
+
+  // Auto-select first category if none selected
+  useEffect(() => {
+    if (!categoryId && categories.length > 0 && !query) {
+      setCategoryId(categories[0].id);
+    }
+  }, [categories, categoryId, query]);
 
   const onProductClick = (p: Product) => {
-    if (p.modifiers && p.modifiers.length) setModProduct(p);
+    if (p.modifierGroups && p.modifierGroups.length) setModProduct(p);
     else cart.addItem(p, []);
   };
 
-  const handleConfirm = (method: PaymentMethod, received?: number, change?: number) => {
-    const sale = {
-      id: crypto.randomUUID(),
-      folio: nextFolio(),
-      createdAt: new Date().toISOString(),
-      cashier: "Demo",
-      items: cart.items,
-      subtotal: totals.subtotal,
-      tax: totals.tax,
-      total: totals.total,
-      payment: method,
-      received,
-      change,
-    };
-    addSale(sale);
-    setLastSale(sale);
-    setCheckoutOpen(false);
-    cart.clear();
+  const sSale = useServerFn(saveSale);
+  const sPrint = useServerFn(printSaleTicket);
+
+  const handleConfirm = async (method: PaymentMethod, received?: number, change?: number) => {
+    setIsSaving(true);
+    try {
+      const folio = nextFolio();
+      const saleData = {
+        folio,
+        subtotal: totals.subtotal,
+        tax: totals.tax,
+        total: totals.total,
+        paymentMethod: method,
+        cashReceived: received,
+        changeAmount: change,
+        customerId: cart.customerId || undefined,
+        items: cart.items.map(i => ({
+          productId: i.product.id,
+          productName: i.product.name,
+          quantity: i.quantity,
+          unitPrice: i.unitPrice,
+          modifiers: i.modifiers.map(m => ({
+            modifierName: m.optionLabel,
+            extraPrice: m.extraPrice
+          }))
+        }))
+      };
+
+      let saleId = "";
+      let autoPrint = false;
+
+      if (!navigator.onLine) {
+        // Offline Buffering
+        const buffer = JSON.parse(localStorage.getItem("buffered_sales") || "[]");
+        saleId = `offline-${crypto.randomUUID()}`;
+        buffer.push({ ...saleData, id: saleId, createdAt: new Date().toISOString() });
+        localStorage.setItem("buffered_sales", JSON.stringify(buffer));
+        toast.warning("Sin conexión. Venta guardada localmente.");
+      } else {
+        const result = await sSale(saleData);
+        saleId = result.saleId;
+        autoPrint = result.autoPrint;
+      }
+
+      const completedSale = {
+        id: saleId,
+        folio,
+        createdAt: new Date().toISOString(),
+        cashier: "Cajero",
+        items: cart.items,
+        subtotal: totals.subtotal,
+        tax: totals.tax,
+        total: totals.total,
+        payment: method,
+        received,
+        change,
+        isBuffered: !navigator.onLine
+      };
+
+      addSale(completedSale);
+      setLastSale(completedSale);
+      setCheckoutOpen(false);
+      cart.clear();
+
+      if (autoPrint && saleId) {
+        toast.promise(sPrint({ saleId }), {
+          loading: "Imprimiendo ticket...",
+          success: "Ticket impreso",
+          error: (e) => `Error al imprimir: ${e.message}`,
+        });
+      }
+    } catch (e: any) {
+      toast.error(`Error al guardar venta: ${e.message}`);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -75,36 +163,37 @@ function POSPage() {
         </header>
 
         <div className="flex gap-2 mb-4 overflow-x-auto pb-1 scrollbar-thin">
-          {CATEGORIES.map((c) => {
-            const active = c.id === category && !query;
+          {categories.map((c) => {
+            const active = c.id === categoryId && !query;
             return (
               <button
                 key={c.id}
-                onClick={() => { setQuery(""); setCategory(c.id); }}
-                className={`px-4 py-2.5 rounded-xl whitespace-nowrap text-sm font-semibold transition ${
-                  active
-                    ? "bg-gradient-to-r from-gold to-gold-soft text-primary-foreground shadow-[var(--shadow-gold)]"
-                    : "bg-surface text-muted-foreground hover:text-foreground gold-border"
-                }`}
+                onClick={() => { setQuery(""); setCategoryId(c.id); }}
+                className={`px-4 py-2.5 rounded-xl whitespace-nowrap text-sm font-semibold transition ${active
+                  ? "bg-linear-to-r from-gold to-gold-soft text-primary-foreground shadow-(--shadow-gold)"
+                  : "bg-surface text-muted-foreground hover:text-foreground gold-border"
+                  }`}
               >
-                <span className="mr-1.5">{c.emoji}</span>{c.label}
+                {c.name}
               </button>
             );
           })}
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 overflow-y-auto pr-1 pb-4 auto-rows-min">
-          {products.map((p) => (
+          {isLoading ? (
+            <div className="col-span-full py-20 flex justify-center"><Loader2 className="size-8 animate-spin text-gold" /></div>
+          ) : products.map((p) => (
             <button
               key={p.id}
               onClick={() => onProductClick(p)}
-              className="group relative bg-card rounded-2xl p-4 text-left gold-border hover:border-gold transition-all hover:-translate-y-0.5 hover:shadow-[var(--shadow-gold)] active:scale-[0.98]"
+              className="group relative bg-card rounded-2xl p-4 text-left gold-border hover:border-gold transition-all hover:-translate-y-0.5 hover:shadow-(--shadow-gold) active:scale-[0.98]"
             >
-              <div className="text-4xl mb-2">{p.emoji}</div>
+              <div className="text-4xl mb-2">{p.emoji || "📦"}</div>
               <div className="font-semibold text-sm leading-tight line-clamp-2 min-h-[2.5rem]">{p.name}</div>
               <div className="mt-2 flex items-center justify-between">
                 <span className="text-lg font-bold gold-text">{fmt(p.price)}</span>
-                {p.modifiers?.length ? (
+                {p.modifierGroups?.length ? (
                   <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Personalizable</span>
                 ) : null}
               </div>
@@ -121,6 +210,49 @@ function POSPage() {
         <div className="p-5 border-b border-border">
           <h2 className="font-display text-xl">Carrito de venta</h2>
           <p className="text-xs text-muted-foreground">{cart.items.length} producto(s)</p>
+
+          <div className="mt-4 space-y-2">
+            {!cart.customerId ? (
+              <div className="relative">
+                <Search className="absolute left-2 top-1/2 -translate-y-1/2 size-3 text-muted-foreground" />
+                <Input
+                  placeholder="Asignar cliente..."
+                  className="h-9 pl-7 text-xs bg-surface-2"
+                  value={customerSearch}
+                  onChange={e => setCustomerSearch(e.target.value)}
+                />
+                {customerSearch && (
+                  <div className="absolute top-full left-0 w-full bg-card border border-border rounded-lg shadow-xl z-50 max-h-40 overflow-y-auto mt-1">
+                    {customers.filter(c => c.name.toLowerCase().includes(customerSearch.toLowerCase())).map(c => (
+                      <button
+                        key={c.id}
+                        className="w-full text-left p-2 hover:bg-gold/10 text-xs flex justify-between"
+                        onClick={() => { cart.setCustomerId(c.id); setCustomerSearch(""); }}
+                      >
+                        <span>{c.name}</span>
+                        <span className="text-gold font-bold">{c.loyalty_points} pts</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="flex justify-between items-center bg-gold/10 p-2 rounded-lg border border-gold/20">
+                <div className="flex items-center gap-2">
+                  <div className="size-6 bg-gold rounded-full flex items-center justify-center text-[10px] font-bold text-black uppercase">
+                    {selectedCustomer?.name[0]}
+                  </div>
+                  <div className="text-xs">
+                    <div className="font-bold truncate max-w-[120px]">{selectedCustomer?.name}</div>
+                    <div className="text-gold font-semibold text-[10px]">{selectedCustomer?.loyalty_points} pts acumulados</div>
+                  </div>
+                </div>
+                <button onClick={() => cart.setCustomerId(null)} className="text-muted-foreground hover:text-destructive">
+                  <X className="size-4" />
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto p-3 space-y-2">
@@ -133,11 +265,11 @@ function POSPage() {
           {cart.items.map((i) => (
             <div key={i.uid} className="bg-card rounded-xl p-3 gold-border">
               <div className="flex items-start gap-2">
-                <div className="text-2xl">{i.product.emoji}</div>
+                <div className="text-2xl">{i.product.emoji || "📦"}</div>
                 <div className="flex-1 min-w-0">
                   <div className="font-semibold text-sm leading-tight">{i.product.name}</div>
                   {i.modifiers.filter((m) => m.optionLabel).map((m, idx) => (
-                    <div key={idx} className="text-[11px] text-gold">+ {m.optionLabel}</div>
+                    <div key={idx} className="text-[11px] text-gold">+ {m.optionLabel} {m.extraPrice ? `(${fmt(m.extraPrice)})` : ""}</div>
                   ))}
                   <div className="text-xs text-muted-foreground mt-0.5">{fmt(i.unitPrice)} c/u</div>
                 </div>
@@ -170,10 +302,11 @@ function POSPage() {
             <span className="font-display text-3xl font-bold gold-text">{fmt(totals.total)}</span>
           </div>
           <Button
-            disabled={cart.items.length === 0}
+            disabled={cart.items.length === 0 || isSaving}
             onClick={() => setCheckoutOpen(true)}
             className="w-full h-14 text-lg font-bold bg-success hover:bg-success/90 text-success-foreground"
           >
+            {isSaving ? <Loader2 className="mr-2 animate-spin" /> : null}
             COBRAR
           </Button>
           <Button

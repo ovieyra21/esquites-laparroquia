@@ -3,6 +3,10 @@ import { Outlet, createRootRouteWithContext, HeadContent, Scripts } from "@tanst
 import type { ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { Sidebar } from "@/components/Sidebar";
+import { ThemeProvider } from "@/components/theme-provider";
+import { OfflineSync } from "@/components/OfflineSync";
+import { Toaster } from "sonner";
+import { Button } from "@/components/ui/button";
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
@@ -29,6 +33,35 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   }),
   shellComponent: RootShell,
   component: RootComponent,
+  loadingComponent: () => (
+    <div className="flex min-h-screen items-center justify-center bg-background">
+      <div className="flex flex-col items-center gap-4">
+        <div className="size-12 border-4 border-gold border-t-transparent rounded-full animate-spin" />
+        <p className="text-muted-foreground animate-pulse font-display text-sm tracking-widest uppercase">Iniciando La Parroquia...</p>
+      </div>
+    </div>
+  ),
+  errorComponent: ({ error }) => (
+    <div className="flex min-h-screen items-center justify-center bg-background p-6">
+      <div className="max-w-md w-full bg-surface border border-destructive/20 p-8 rounded-3xl text-center shadow-2xl">
+        <div className="size-16 bg-destructive/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
+          <span className="text-3xl">⚠️</span>
+        </div>
+        <h1 className="text-2xl font-display font-bold text-foreground mb-4">Error de Aplicación</h1>
+        <pre className="text-[10px] bg-black/40 p-4 rounded-xl overflow-auto text-left mb-6 max-h-40 font-mono text-muted-foreground">
+          {error.message}
+        </pre>
+        <div className="flex gap-3">
+          <Button onClick={() => window.location.reload()} className="flex-1 bg-gold hover:bg-gold/90 text-black font-bold h-12 rounded-xl">
+            Reintentar Carga
+          </Button>
+          <Button onClick={() => window.history.back()} variant="outline" className="flex-1 h-12 rounded-xl">
+            Volver
+          </Button>
+        </div>
+      </div>
+    </div>
+  ),
   notFoundComponent: () => (
     <div className="flex min-h-screen items-center justify-center">
       <div className="text-center">
@@ -41,7 +74,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="es" className="dark">
+    <html lang="es">
       <head><HeadContent /></head>
       <body>{children}<Scripts /></body>
     </html>
@@ -51,11 +84,17 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   return (
-    <QueryClientProvider client={queryClient}>
-      <div className="flex min-h-screen w-full">
-        <Sidebar />
-        <main className="flex-1 min-w-0"><Outlet /></main>
-      </div>
-    </QueryClientProvider>
+    <ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <div className="flex min-h-screen w-full bg-background text-foreground">
+          <Sidebar />
+          <main className="flex-1 min-w-0">
+            <Outlet />
+            <OfflineSync />
+            <Toaster position="top-right" richColors />
+          </main>
+        </div>
+      </QueryClientProvider>
+    </ThemeProvider>
   );
 }

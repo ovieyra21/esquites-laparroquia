@@ -1,10 +1,14 @@
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Printer, Download, Share2, RotateCcw } from "lucide-react";
+import { Printer, Download, Share2, RotateCcw, Loader2 } from "lucide-react";
 import { fmt } from "@/store/cart";
 import type { Sale } from "@/store/sales";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { useServerFn } from "@tanstack/react-start";
+import { printSaleTicket } from "@/lib/printer.functions";
+import { toast } from "sonner";
+import { useState } from "react";
 
 export function ReceiptDialog({
   sale,
@@ -17,6 +21,20 @@ export function ReceiptDialog({
 }) {
   if (!sale) return null;
   const date = new Date(sale.createdAt);
+  const printThermal = useServerFn(printSaleTicket);
+  const [printing, setPrinting] = useState(false);
+
+  const handleThermalPrint = async () => {
+    setPrinting(true);
+    try {
+      await printThermal({ saleId: sale.id });
+      toast.success("Imprimiendo ticket...");
+    } catch (e: any) {
+      toast.error(`Error: ${e.message}`);
+    } finally {
+      setPrinting(false);
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -33,6 +51,11 @@ export function ReceiptDialog({
             <div className="flex justify-between"><span>Fecha:</span><span>{format(date, "dd/MM/yyyy", { locale: es })}</span></div>
             <div className="flex justify-between"><span>Hora:</span><span>{format(date, "HH:mm:ss")}</span></div>
             <div className="flex justify-between"><span>Cajero:</span><span>{sale.cashier}</span></div>
+            {sale.isBuffered && (
+              <div className="bg-destructive/10 text-destructive border border-destructive/20 text-[10px] p-1 text-center font-bold mt-2 uppercase tracking-tighter">
+                Venta Local - Pendiente de Sincronización
+              </div>
+            )}
           </div>
           <div className="border-t border-dashed border-black/40 my-2" />
           <div className="space-y-2">
@@ -66,11 +89,21 @@ export function ReceiptDialog({
           <div className="text-center text-[10px] mt-1 opacity-60">esquiteslaparroquia.mx</div>
         </div>
 
-        <div className="grid grid-cols-4 gap-2 p-3 bg-card">
-          <Button variant="outline" size="sm" onClick={() => window.print()}><Printer className="size-4" /></Button>
+        <div className="grid grid-cols-5 gap-2 p-3 bg-card">
+          <Button variant="outline" size="sm" onClick={() => window.print()} title="Imprimir navegador"><Printer className="size-4" /></Button>
+          <Button
+            variant="default"
+            size="sm"
+            onClick={handleThermalPrint}
+            disabled={printing}
+            className="bg-gold hover:bg-gold/90 text-primary-foreground"
+            title="Imprimir térmica"
+          >
+            {printing ? <Loader2 className="size-4 animate-spin" /> : <Printer className="size-4" />}
+          </Button>
           <Button variant="outline" size="sm"><Download className="size-4" /></Button>
           <Button variant="outline" size="sm"><Share2 className="size-4" /></Button>
-          <Button variant="outline" size="sm"><RotateCcw className="size-4" /></Button>
+          <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}><RotateCcw className="size-4" /></Button>
         </div>
       </DialogContent>
     </Dialog>

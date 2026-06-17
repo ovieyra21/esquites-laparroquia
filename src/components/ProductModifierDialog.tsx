@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import type { Product } from "@/data/catalog";
+import type { Product } from "@/lib/catalog-types";
 import { useCart, type CartItem } from "@/store/cart";
 import { fmt } from "@/store/cart";
 
@@ -17,23 +17,67 @@ export function ProductModifierDialog({
   onOpenChange: (b: boolean) => void;
 }) {
   const addItem = useCart((s) => s.addItem);
-  const [selections, setSelections] = useState<Record<string, string>>({});
+  const [selectedGroups, setSelectedGroups] = useState<Record<string, string[]>>(() => {
+    const initial: Record<string, string[]> = {};
+    product?.modifierGroups?.forEach((g) => {
+      initial[g.id] = g.modifiers
+        .slice(0, g.minSelections)
+        .map((o) => o.id);
+    });
+    return initial;
+  });
 
   if (!product) return null;
-  const groups = product.modifiers ?? [];
+  const groups = product.modifierGroups ?? [];
 
-  const handleAdd = () => {
-    const mods: CartItem["modifiers"] = groups.map((g) => {
-      const optId = selections[g.id];
-      const opt = g.options.find((o) => o.id === optId);
-      return { groupLabel: g.label, optionLabel: opt?.label ?? "" };
+  const toggleOption = (groupId: string, optionId: string) => {
+    const group = groups.find((g) => g.id === groupId);
+    if (!group) return;
+
+    setSelectedGroups((prev) => {
+      const current = prev[groupId] ?? [];
+      const isSelected = current.includes(optionId);
+
+      if (isSelected) {
+        return { ...prev, [groupId]: current.filter((id) => id !== optionId) };
+      } else {
+        if (current.length >= group.maxSelections) return prev;
+        return { ...prev, [groupId]: [...current, optionId] };
+      }
     });
-    addItem(product, mods);
-    setSelections({});
-    onOpenChange(false);
   };
 
-  const allSelected = groups.every((g) => !g.required || selections[g.id]);
+  const isGroupValid = (groupId: string) => {
+    const group = groups.find((g) => g.id === groupId);
+    if (!group) return true;
+    const count = selectedGroups[groupId]?.length ?? 0;
+    return count >= group.minSelections && count <= group.maxSelections;
+  };
+
+  const allValid = groups.every((g) => isGroupValid(g.id));
+
+  const total = useMemo(() => {
+    let price = product.price;
+    groups.forEach((g) => {
+      selectedGroups[g.id]?.forEach((optId) => {
+        const opt = g.modifiers.find((o) => o.id === optId);
+        if (opt) price += opt.price;
+      });
+    });
+    return price;
+  }, [product.price, groups, selectedGroups]);
+
+  const handleConfirm = () => {
+    const mods: CartItem["modifiers"] = groups.flatMap((g) => {
+      return (selectedGroups[g.id] ?? []).map((optId) => {
+        const opt = g.modifiers.find((o) => o.id === optId);
+        return { groupLabel: g.name, optionLabel: opt?.name ?? "", extraPrice: opt?.price ?? 0 };
+      });
+    });
+    addItem(product, mods);
+    setSelectedGroups({});
+    onOpenChange(false);
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -49,31 +93,38 @@ export function ProductModifierDialog({
           )}
         </DialogHeader>
 
-        <div className="space-y-5 py-2">
+        <div className="space-y-6 my-4 max-h-[60vh] overflow-y-auto pr-2 scrollbar-thin">
           {groups.map((g) => (
-            <div key={g.id}>
-              <Label className="text-base font-semibold mb-3 block">
-                {g.label} {g.required && <span className="text-destructive">*</span>}
-              </Label>
-              <RadioGroup
-                value={selections[g.id] ?? ""}
-                onValueChange={(v) => setSelections((s) => ({ ...s, [g.id]: v }))}
-                className="grid grid-cols-2 gap-2"
-              >
-                {g.options.map((o) => (
-                  <label
-                    key={o.id}
-                    className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition ${
-                      selections[g.id] === o.id
-                        ? "border-gold bg-gold/10"
-                        : "border-border hover:border-gold/40"
-                    }`}
-                  >
-                    <RadioGroupItem value={o.id} id={`${g.id}-${o.id}`} />
-                    <span className="text-sm font-medium">{o.label}</span>
-                  </label>
-                ))}
-              </RadioGroup>
+            <div key={g.id} className="space-y-3">
+              <div className="flex justify-between items-end">
+                <div>
+                  <h3 className="font-bold text-lg">{g.name}</h3>
+                  <p className="text-xs text-muted-foreground">
+                    {g.minSelections > 0 ? `Mínimo ${g.minSelections}, ` : ""}Máximo {g.maxSelections}
+                  </p>
+                </div>
+                {!isGroupValid(g.id) && (
+                  <span className="text-[10px] bg-destructive/10 text-destructive px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Incompleto</span>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {g.modifiers.map((o) => {
+                  const selected = selectedGroups[g.id]?.includes(o.id);
+                  return (
+                    <button
+                      key={o.id}
+                      onClick={() => toggleOption(g.id, o.id)}
+                      className={`flex flex-col p-3 rounded-xl border text-left transition h-full ${selected
+                        ? "border-gold bg-gold/10 text-foreground"
+                        : "border-border text-muted-foreground hover:border-gold/30"
+                        }`}
+                    >
+                      <span className="text-sm font-semibold leading-tight">{o.name}</span>
+                      {o.price > 0 && <span className="text-xs gold-text font-bold mt-1">+{fmt(o.price)}</span>}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           ))}
 
@@ -96,11 +147,11 @@ export function ProductModifierDialog({
             Cancelar
           </Button>
           <Button
-            disabled={!allSelected}
-            onClick={handleAdd}
-            className="bg-gradient-to-r from-gold to-gold-soft text-primary-foreground font-semibold hover:opacity-90"
+            disabled={!allValid}
+            onClick={handleConfirm}
+            className="w-full h-14 text-lg font-bold bg-linear-to-r from-gold to-gold-soft hover:opacity-90 shadow-(--shadow-gold)"
           >
-            Agregar al carrito
+            Agregar al carrito — {fmt(total)}
           </Button>
         </DialogFooter>
       </DialogContent>

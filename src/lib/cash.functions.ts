@@ -2,8 +2,15 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-const openInput = z.object({ openingAmount: z.number().min(0).max(1_000_000) });
-const closeInput = z.object({ realAmount: z.number().min(0).max(1_000_000), notes: z.string().max(500).optional() });
+const openInput = z.object({
+  openingAmount: z.number().min(0).max(1_000_000),
+  breakdown: z.record(z.number()).optional(),
+});
+const closeInput = z.object({
+  realAmount: z.number().min(0).max(1_000_000),
+  notes: z.string().max(500).optional(),
+  breakdown: z.record(z.number()).optional(),
+});
 const moveInput = z.object({
   type: z.enum(["entrada", "salida"]),
   amount: z.number().positive().max(1_000_000),
@@ -25,7 +32,12 @@ export const openCashRegister = createServerFn({ method: "POST" })
     if (existing) throw new Error("Ya tienes una caja abierta.");
     const { data: row, error } = await supabase
       .from("cash_register")
-      .insert({ user_id: userId, opening_amount: data.openingAmount, status: "abierta" })
+      .insert({
+        user_id: userId,
+        opening_amount: data.openingAmount,
+        opening_breakdown: data.breakdown,
+        status: "abierta"
+      })
       .select()
       .single();
     if (error) throw new Error(error.message);
@@ -55,6 +67,7 @@ export const closeCashRegister = createServerFn({ method: "POST" })
         closed_at: new Date().toISOString(),
         closing_amount: data.realAmount,
         real_amount: data.realAmount,
+        closing_breakdown: data.breakdown,
         expected_amount: expected,
         difference: diff,
         notes: data.notes ?? null,

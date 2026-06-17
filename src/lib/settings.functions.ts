@@ -15,6 +15,7 @@ const updateInput = z.object({
   address: z.string().max(500).optional().nullable(),
   phone: z.string().max(50).optional().nullable(),
   rfc: z.string().max(20).optional().nullable(),
+  whatsapp_number: z.string().max(20).optional().nullable(),
   footer_message: z.string().max(255).optional().nullable(),
   tax: z.number().min(0).max(100).optional(),
   printer_enabled: z.boolean().optional(),
@@ -24,11 +25,14 @@ const updateInput = z.object({
   auto_print: z.boolean().optional(),
   auto_cut: z.boolean().optional(),
   open_drawer: z.boolean().optional(),
+  logo_url: z.string().optional().nullable(),
+  logo_data: z.string().optional().nullable(),
+  show_logo: z.boolean().optional(),
 });
 
 export const updateSettings = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => updateInput.parse(input))
+  .validator((input: any) => updateInput.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: userId, _role: "admin" });

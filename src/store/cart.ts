@@ -1,11 +1,11 @@
 import { create } from "zustand";
-import type { Product } from "@/data/catalog";
+import type { Product } from "@/lib/catalog-types";
 
 export type CartItem = {
   uid: string;
   product: Product;
   quantity: number;
-  modifiers: { groupLabel: string; optionLabel: string }[];
+  modifiers: { groupLabel: string; optionLabel: string; extraPrice?: number }[];
   unitPrice: number;
 };
 
@@ -13,11 +13,13 @@ type CartState = {
   items: CartItem[];
   discount: number;
   taxRate: number;
+  customerId: string | null;
   addItem: (p: Product, modifiers: CartItem["modifiers"]) => void;
   removeItem: (uid: string) => void;
   setQty: (uid: string, qty: number) => void;
   setDiscount: (n: number) => void;
   setTaxRate: (n: number) => void;
+  setCustomerId: (id: string | null) => void;
   clear: () => void;
 };
 
@@ -25,6 +27,7 @@ export const useCart = create<CartState>((set) => ({
   items: [],
   discount: 0,
   taxRate: 0,
+  customerId: null,
   addItem: (product, modifiers) =>
     set((s) => ({
       items: [
@@ -34,7 +37,7 @@ export const useCart = create<CartState>((set) => ({
           product,
           quantity: 1,
           modifiers,
-          unitPrice: product.price,
+          unitPrice: product.price + modifiers.reduce((acc, modifier) => acc + (modifier.extraPrice ?? 0), 0),
         },
       ],
     })),
@@ -45,7 +48,8 @@ export const useCart = create<CartState>((set) => ({
     })),
   setDiscount: (n) => set({ discount: Math.max(0, n) }),
   setTaxRate: (n) => set({ taxRate: Math.max(0, n) }),
-  clear: () => set({ items: [], discount: 0 }),
+  setCustomerId: (id) => set({ customerId: id }),
+  clear: () => set({ items: [], discount: 0, customerId: null }),
 }));
 
 export const calcTotals = (items: CartItem[], discount: number, taxRate: number) => {
