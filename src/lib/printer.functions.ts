@@ -49,7 +49,7 @@ async function buildTicketBuffer(opts: {
 
   let e = encoder.initialize().align("center").raw(logoRaster).newline()
     .codepage("cp437")
-    .bold(true).size(1, 1).line(opts.settings.business_name ?? "Esquites La Parroquia").bold(false).size(0, 0);
+    .bold(true).size(2, 2).line(opts.settings.business_name ?? "Esquites La Parroquia").bold(false).size(1, 1);
   if (opts.settings.slogan) e = e.line(opts.settings.slogan);
   if (opts.settings.address) e = e.line(opts.settings.address);
   if (opts.settings.phone) e = e.line("Tel: " + opts.settings.phone);
