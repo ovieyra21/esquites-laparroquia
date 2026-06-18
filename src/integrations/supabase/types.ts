@@ -139,6 +139,36 @@ export type Database = {
         }
         Relationships: []
       }
+      customers: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          id: string
+          loyalty_points: number | null
+          name: string
+          phone: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          loyalty_points?: number | null
+          name: string
+          phone?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          loyalty_points?: number | null
+          name?: string
+          phone?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       digital_menus: {
         Row: {
           active: boolean | null
@@ -160,6 +190,36 @@ export type Database = {
           filename?: string | null
           id?: string
           uploaded_at?: string | null
+        }
+        Relationships: []
+      }
+      inventory_items: {
+        Row: {
+          cost_per_unit: number
+          created_at: string | null
+          id: string
+          min_stock: number
+          name: string
+          stock: number
+          unit: string
+        }
+        Insert: {
+          cost_per_unit?: number
+          created_at?: string | null
+          id?: string
+          min_stock?: number
+          name: string
+          stock?: number
+          unit: string
+        }
+        Update: {
+          cost_per_unit?: number
+          created_at?: string | null
+          id?: string
+          min_stock?: number
+          name?: string
+          stock?: number
+          unit?: string
         }
         Relationships: []
       }
@@ -236,6 +296,42 @@ export type Database = {
           },
           {
             foreignKeyName: "product_modifiers_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_recipes: {
+        Row: {
+          id: string
+          inventory_item_id: string | null
+          product_id: string | null
+          quantity: number
+        }
+        Insert: {
+          id?: string
+          inventory_item_id?: string | null
+          product_id?: string | null
+          quantity: number
+        }
+        Update: {
+          id?: string
+          inventory_item_id?: string | null
+          product_id?: string | null
+          quantity?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_recipes_inventory_item_id_fkey"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_recipes_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
@@ -358,6 +454,7 @@ export type Database = {
           quantity: number | null
           sale_id: string | null
           total: number | null
+          unit_cost: number | null
           unit_price: number | null
         }
         Insert: {
@@ -368,6 +465,7 @@ export type Database = {
           quantity?: number | null
           sale_id?: string | null
           total?: number | null
+          unit_cost?: number | null
           unit_price?: number | null
         }
         Update: {
@@ -378,6 +476,7 @@ export type Database = {
           quantity?: number | null
           sale_id?: string | null
           total?: number | null
+          unit_cost?: number | null
           unit_price?: number | null
         }
         Relationships: [
@@ -406,8 +505,10 @@ export type Database = {
           cash_register_id: string | null
           change_amount: number | null
           created_at: string | null
+          customer_id: string | null
           folio: number
           id: string
+          kds_status: string | null
           payment_method: string | null
           subtotal: number | null
           tax: number | null
@@ -422,8 +523,10 @@ export type Database = {
           cash_register_id?: string | null
           change_amount?: number | null
           created_at?: string | null
+          customer_id?: string | null
           folio?: number
           id?: string
+          kds_status?: string | null
           payment_method?: string | null
           subtotal?: number | null
           tax?: number | null
@@ -438,8 +541,10 @@ export type Database = {
           cash_register_id?: string | null
           change_amount?: number | null
           created_at?: string | null
+          customer_id?: string | null
           folio?: number
           id?: string
+          kds_status?: string | null
           payment_method?: string | null
           subtotal?: number | null
           tax?: number | null
@@ -454,6 +559,13 @@ export type Database = {
             referencedRelation: "cash_register"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "sales_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
         ]
       }
       settings: {
@@ -465,6 +577,8 @@ export type Database = {
           footer_message: string | null
           id: string
           logo: string | null
+          logo_data: string | null
+          logo_url: string | null
           open_drawer: boolean | null
           phone: string | null
           printer_enabled: boolean | null
@@ -473,6 +587,7 @@ export type Database = {
           printer_width: number | null
           qr_url: string | null
           rfc: string | null
+          show_logo: boolean | null
           slogan: string | null
           tax: number | null
           updated_at: string | null
@@ -486,6 +601,8 @@ export type Database = {
           footer_message?: string | null
           id?: string
           logo?: string | null
+          logo_data?: string | null
+          logo_url?: string | null
           open_drawer?: boolean | null
           phone?: string | null
           printer_enabled?: boolean | null
@@ -494,6 +611,7 @@ export type Database = {
           printer_width?: number | null
           qr_url?: string | null
           rfc?: string | null
+          show_logo?: boolean | null
           slogan?: string | null
           tax?: number | null
           updated_at?: string | null
@@ -507,6 +625,8 @@ export type Database = {
           footer_message?: string | null
           id?: string
           logo?: string | null
+          logo_data?: string | null
+          logo_url?: string | null
           open_drawer?: boolean | null
           phone?: string | null
           printer_enabled?: boolean | null
@@ -515,6 +635,7 @@ export type Database = {
           printer_width?: number | null
           qr_url?: string | null
           rfc?: string | null
+          show_logo?: boolean | null
           slogan?: string | null
           tax?: number | null
           updated_at?: string | null
