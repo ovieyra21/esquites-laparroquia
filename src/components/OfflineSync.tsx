@@ -25,7 +25,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { fmt } from "@/store/cart";
 
 export function OfflineSync() {
-    const [isOnline, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
+    const [mounted, setMounted] = useState(false);
+    const [isOnline, setIsOnline] = useState(true);
     const [syncing, setSyncing] = useState(false);
     const [buffer, setBuffer] = useState<any[]>([]);
     const sSale = useServerFn(saveSale);
@@ -42,6 +43,9 @@ export function OfflineSync() {
     }, []);
 
     useEffect(() => {
+        setMounted(true);
+        setIsOnline(navigator.onLine);
+
         const handleOnline = () => {
             setIsOnline(true);
             setTimeout(() => {
@@ -207,7 +211,7 @@ export function OfflineSync() {
 
     return (
         <div className="fixed bottom-4 left-4 z-100">
-            {renderStatus()}
+            {mounted ? renderStatus() : null}
         </div>
     );
 }
