@@ -44,29 +44,12 @@ async function buildTicketBuffer(opts: {
   const date = new Date(opts.createdAt);
   const dateStr = date.toLocaleString("es-MX", { dateStyle: "short", timeStyle: "medium" });
 
-<<<<<<< HEAD
-  let e = encoder.initialize().codepage("cp437").align("center");
-
-  if (opts.settings.show_logo && opts.settings.logo_data) {
-    try {
-      const logo = JSON.parse(opts.settings.logo_data);
-      const rawData = Uint8Array.from(atob(logo.data), c => c.charCodeAt(0));
-      e = e.image({ data: rawData, width: logo.width, height: logo.height }, logo.width, logo.height, 'threshold', 128);
-    } catch (err) {
-      e = e.bold(true).size(2, 1).line(opts.settings.business_name ?? "Esquites La Parroquia").bold(false).size(1, 1);
-    }
-  } else {
-    e = e.bold(true).size(2, 1).line(opts.settings.business_name ?? "Esquites La Parroquia").bold(false).size(1, 1);
-  }
-
-=======
   // Logo raster, centered & sized to printer width
   const logoRaster = Array.from(getLogoRaster(widthMm));
 
   let e = encoder.initialize().align("center").raw(logoRaster).newline()
     .codepage("cp437")
     .bold(true).size(1, 1).line(opts.settings.business_name ?? "Esquites La Parroquia").bold(false).size(0, 0);
->>>>>>> cb9696df48d7aa87774d2acfa991ca2202ecc86c
   if (opts.settings.slogan) e = e.line(opts.settings.slogan);
   if (opts.settings.address) e = e.line(opts.settings.address);
   if (opts.settings.phone) e = e.line("Tel: " + opts.settings.phone);
@@ -192,36 +175,24 @@ const padRight = (s: string, len: number) => (s.length >= len ? s.slice(0, len) 
 async function sendToPrinter(ip: string, port: number, data: Uint8Array): Promise<void> {
   const timeout = 5000; // 5 seconds timeout for WiFi printers
 
-  // Try Cloudflare Sockets (Nitro/Cloudflare)
   try {
-<<<<<<< HEAD
-    // @ts-ignore - Only available in Cloudflare Workers
-    const moduleName = "cloudflare:sockets";
-    const { connect } = (await import(/* @vite-ignore */ moduleName)) as any;
-    if (connect) {
-      const socket = connect({ hostname: ip, port });
-      const writer = socket.writable.getWriter();
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Timeout de conexión con la impresora (WiFi)")), timeout)
-      );
-
-      try {
-        await Promise.race([writer.write(data), timeoutPromise]);
-        await writer.close();
-        return;
-      } finally {
-        try { writer.releaseLock(); } catch { }
-      }
-    }
-  } catch (e) {
-    // Falls through to Node.js check
-=======
     // Obscure the specifier so Vite/Rollup doesn't try to resolve it at build time.
     const mod = "cloudflare" + ":" + "sockets";
-    ({ connect } = await (Function("s", "return import(s)")(mod) as Promise<any>));
+    const { connect } = await (Function("s", "return import(s)")(mod) as Promise<any>);
+    const socket = connect({ hostname: ip, port });
+    const writer = socket.writable.getWriter();
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("Timeout de conexión con la impresora (WiFi)")), timeout)
+    );
+    try {
+      await Promise.race([writer.write(data), timeoutPromise]);
+      await writer.close();
+      return;
+    } finally {
+      try { writer.releaseLock(); } catch { }
+    }
   } catch {
-    throw new Error("La impresión por red no está disponible en este entorno. Usa la impresión por navegador.");
->>>>>>> cb9696df48d7aa87774d2acfa991ca2202ecc86c
+    // Falls through to Node.js check
   }
 
   // Try Node.js Net (Local Dev / VPS)
