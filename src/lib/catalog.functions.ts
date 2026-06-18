@@ -79,8 +79,8 @@ export const getCatalog = createServerFn({ method: "GET" })
   });
 
 export const getPublicCatalog = createServerFn({ method: "GET" })
-  .handler(async ({ context }) => {
-    const { supabase } = context;
+  .handler(async () => {
+    const { supabaseAdmin: supabase } = await import("@/integrations/supabase/client.server");
     // Public version (same logic but maybe fewer fields if needed, 
     // though RLS handles security)
     const { data: categories, error } = await supabase
@@ -147,7 +147,7 @@ export const getPublicCatalog = createServerFn({ method: "GET" })
                 })),
             })),
         })),
-    })).filter(c => c.products.length > 0);
+    })).filter((c: any) => c.products.length > 0);
 
     return transformed;
   });

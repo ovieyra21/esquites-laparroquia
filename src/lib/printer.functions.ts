@@ -262,7 +262,7 @@ export const printSaleTicket = createServerFn({ method: "POST" })
       change: sale.change_amount != null ? Number(sale.change_amount) : undefined,
     });
 
-    await sendToPrinter(settings.printer_ip, settings.printer_port ?? 9100, buffer);
+    await sendToPrinter(settings.printer_ip!, settings.printer_port ?? 9100, buffer);
     return { ok: true };
   });
 

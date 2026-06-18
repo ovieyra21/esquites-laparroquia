@@ -56,7 +56,7 @@ export const saveSale = createServerFn({ method: "POST" })
         change_amount: data.changeAmount,
         customer_id: data.customerId,
         status: "completada"
-      })
+      } as any)
       .select()
       .single();
 
