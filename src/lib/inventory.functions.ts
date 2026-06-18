@@ -32,7 +32,7 @@ export const inventoryApi = {
     async upsertItem(item: Partial<InventoryItem>) {
         const { data, error } = await supabase
             .from("inventory_items")
-            .upsert(item)
+            .upsert(item as any)
             .select()
             .single();
 
@@ -68,7 +68,7 @@ export const inventoryApi = {
     async saveRecipe(recipe: Partial<ProductRecipe>) {
         const { data, error } = await supabase
             .from("product_recipes")
-            .upsert(recipe)
+            .upsert(recipe as any)
             .select()
             .single();
 

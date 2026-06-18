@@ -18,7 +18,7 @@ const saveSaleInput = z.object({
     quantity: z.number(),
     unitPrice: z.number(),
     modifiers: z.array(z.object({
-      modifierId: z.string().uuid(),
+      modifierId: z.string().uuid().optional().nullable(),
       modifierName: z.string(),
       extraPrice: z.number()
     }))
@@ -27,7 +27,7 @@ const saveSaleInput = z.object({
 
 export const saveSale = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((input: any) => saveSaleInput.parse(input))
+  .inputValidator((input: any) => saveSaleInput.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 
@@ -45,7 +45,7 @@ export const saveSale = createServerFn({ method: "POST" })
     const { data: sale, error: saleError } = await supabase
       .from("sales")
       .insert({
-        folio: data.folio, // Use string folio to support terminal prefixes
+        folio: Number(data.folio),
         user_id: userId,
         cash_register_id: reg.id,
         subtotal: data.subtotal,
@@ -56,7 +56,7 @@ export const saveSale = createServerFn({ method: "POST" })
         change_amount: data.changeAmount,
         customer_id: data.customerId,
         status: "completada"
-      })
+      } as any)
       .select()
       .single();
 
@@ -134,13 +134,12 @@ export const saveSale = createServerFn({ method: "POST" })
       if (itemError) throw new Error(itemError.message);
 
       if (item.modifiers.length > 0) {
-        const mods = item.modifiers.map(m => ({
+        const mods = item.modifiers.map((m: any) => ({
           sale_item_id: saleItem.id,
-          modifier_id: m.modifierId,
           modifier_name: m.modifierName,
           extra_price: m.extraPrice
         }));
-        const { error: modsError } = await supabase.from("sale_item_modifiers").insert(mods);
+        const { error: modsError } = await supabase.from("sale_item_modifiers").insert(mods as any);
         if (modsError) throw new Error(modsError.message);
       }
     }
@@ -156,7 +155,7 @@ export const saveSale = createServerFn({ method: "POST" })
 
 export const updateKdsStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((input: any) => z.object({ saleId: z.string().uuid(), status: z.string() }).parse(input))
+  .inputValidator((input: any) => z.object({ saleId: z.string().uuid(), status: z.string() }).parse(input))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { error } = await (supabase as any)

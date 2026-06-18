@@ -5,14 +5,11 @@ import { fmt } from "@/store/cart";
 import type { Sale } from "@/store/sales";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-<<<<<<< HEAD
 import { useServerFn } from "@tanstack/react-start";
 import { printSaleTicket } from "@/lib/printer.functions";
 import { toast } from "sonner";
 import { useState } from "react";
-=======
 import logoTicket from "@/assets/logo-ticket.png";
->>>>>>> cb9696df48d7aa87774d2acfa991ca2202ecc86c
 
 export function ReceiptDialog({
   sale,
@@ -31,7 +28,7 @@ export function ReceiptDialog({
   const handleThermalPrint = async () => {
     setPrinting(true);
     try {
-      await printThermal({ saleId: sale.id });
+      await printThermal({ data: { saleId: sale.id } });
       toast.success("Imprimiendo ticket...");
     } catch (e: any) {
       toast.error(`Error: ${e.message}`);

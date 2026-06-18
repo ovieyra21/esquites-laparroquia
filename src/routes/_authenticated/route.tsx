@@ -1,6 +1,5 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -20,7 +19,7 @@ export const Route = createFileRoute("/_authenticated")({
     return { user };
   },
   component: () => <Outlet />,
-  loadingComponent: () => (
+  pendingComponent: () => (
     <div className="flex h-[400px] items-center justify-center">
       <div className="size-8 border-2 border-gold border-t-transparent rounded-full animate-spin" />
     </div>

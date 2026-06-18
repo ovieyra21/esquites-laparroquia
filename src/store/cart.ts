@@ -32,7 +32,6 @@ export const useCart = create<CartState>((set) => ({
     set((s) => ({
       items: [
         ...s.items,
-<<<<<<< HEAD
         {
           uid: crypto.randomUUID(),
           product,
@@ -40,9 +39,6 @@ export const useCart = create<CartState>((set) => ({
           modifiers,
           unitPrice: product.price + modifiers.reduce((acc, modifier) => acc + (modifier.extraPrice ?? 0), 0),
         },
-=======
-        { uid: crypto.randomUUID(), product, quantity: 1, modifiers, unitPrice: product.price },
->>>>>>> cb9696df48d7aa87774d2acfa991ca2202ecc86c
       ],
     })),
   removeItem: (uid) => set((s) => ({ items: s.items.filter((i) => i.uid !== uid) })),

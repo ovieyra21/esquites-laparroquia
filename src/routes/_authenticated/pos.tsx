@@ -1,23 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-<<<<<<< HEAD
 import { useMemo, useState, useEffect } from "react";
 import { Search, Trash2, Plus, Minus, X, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { getCatalog } from "@/lib/catalog.functions";
-import type { Product, Category } from "@/lib/catalog-types";
-=======
-import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
-import { Search, Trash2, Plus, Minus, X, Loader2 } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { listCategories, listProducts } from "@/lib/products.functions";
 import { inferModifiers, type Product } from "@/lib/catalog-types";
->>>>>>> cb9696df48d7aa87774d2acfa991ca2202ecc86c
 import { useCart, calcTotals, fmt } from "@/store/cart";
 import { useSales, nextFolio, type PaymentMethod } from "@/store/sales";
 import { ProductModifierDialog } from "@/components/ProductModifierDialog";
@@ -34,13 +23,6 @@ export const Route = createFileRoute("/_authenticated/pos")({
 });
 
 function POSPage() {
-<<<<<<< HEAD
-  const getCat = useServerFn(getCatalog);
-  const { data: categories = [], isLoading } = useQuery({
-    queryKey: ["catalog"],
-    queryFn: () => getCat(),
-  });
-=======
   const getCats = useServerFn(listCategories);
   const getProds = useServerFn(listProducts);
 
@@ -49,7 +31,6 @@ function POSPage() {
 
   const categories = catsQ.data ?? [];
   const allProducts = (prodsQ.data ?? []) as any[];
->>>>>>> cb9696df48d7aa87774d2acfa991ca2202ecc86c
 
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
@@ -62,30 +43,14 @@ function POSPage() {
   const addSale = useSales((s) => s.addSale);
   const totals = calcTotals(cart.items, cart.discount, cart.taxRate);
 
-<<<<<<< HEAD
   const { data: customers = [] } = useQuery({
     queryKey: ["customers"],
     queryFn: () => crmApi.getCustomers()
   });
 
   const [customerSearch, setCustomerSearch] = useState("");
-  const selectedCustomer = customers.find(c => c.id === cart.customerId);
+  const selectedCustomer = customers.find((c: any) => c.id === cart.customerId);
 
-  const products = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    const allProducts = categories.flatMap(c => c.products);
-
-    if (q) return allProducts.filter(p => p.name.toLowerCase().includes(q));
-    return categories.find(c => c.id === categoryId)?.products ?? [];
-  }, [categories, categoryId, query]);
-
-  // Auto-select first category if none selected
-  useEffect(() => {
-    if (!categoryId && categories.length > 0 && !query) {
-      setCategoryId(categories[0].id);
-    }
-  }, [categories, categoryId, query]);
-=======
   const products: Product[] = useMemo(() => {
     const q = query.trim().toLowerCase();
     const effectiveCat = categoryId ?? categories[0]?.id ?? null;
@@ -101,10 +66,13 @@ function POSPage() {
         includes: p.includes,
         emoji: p.emoji ?? "🌽",
         image_url: p.image_url,
-        modifiers: inferModifiers({ name: p.name, category_name: p.categories?.name }),
+        modifierGroups: inferModifiers({ name: p.name, category_name: p.categories?.name }),
       }));
   }, [allProducts, categoryId, query, categories]);
->>>>>>> cb9696df48d7aa87774d2acfa991ca2202ecc86c
+
+  useEffect(() => {
+    if (!categoryId && categories.length > 0 && !query) setCategoryId(categories[0].id);
+  }, [categories, categoryId, query]);
 
   const onProductClick = (p: Product) => {
     if (p.modifierGroups && p.modifierGroups.length) setModProduct(p);
@@ -150,7 +118,7 @@ function POSPage() {
         localStorage.setItem("buffered_sales", JSON.stringify(buffer));
         toast.warning("Sin conexión. Venta guardada localmente.");
       } else {
-        const result = await sSale(saleData);
+        const result = await sSale({ data: saleData });
         saleId = result.saleId;
         autoPrint = result.autoPrint;
       }
@@ -176,7 +144,7 @@ function POSPage() {
       cart.clear();
 
       if (autoPrint && saleId) {
-        toast.promise(sPrint({ saleId }), {
+        toast.promise(sPrint({ data: { saleId } }), {
           loading: "Imprimiendo ticket...",
           success: "Ticket impreso",
           error: (e) => `Error al imprimir: ${e.message}`,
@@ -211,25 +179,12 @@ function POSPage() {
         </header>
 
         <div className="flex gap-2 mb-4 overflow-x-auto pb-1 scrollbar-thin">
-<<<<<<< HEAD
-          {categories.map((c) => {
-            const active = c.id === categoryId && !query;
-=======
           {categories.map((c: any) => {
             const active = c.id === activeCat && !query;
->>>>>>> cb9696df48d7aa87774d2acfa991ca2202ecc86c
             return (
               <button
                 key={c.id}
                 onClick={() => { setQuery(""); setCategoryId(c.id); }}
-<<<<<<< HEAD
-                className={`px-4 py-2.5 rounded-xl whitespace-nowrap text-sm font-semibold transition ${active
-                  ? "bg-linear-to-r from-gold to-gold-soft text-primary-foreground shadow-(--shadow-gold)"
-                  : "bg-surface text-muted-foreground hover:text-foreground gold-border"
-                  }`}
-              >
-                {c.name}
-=======
                 className={`px-4 py-2.5 rounded-xl whitespace-nowrap text-sm font-semibold transition ${
                   active
                     ? "bg-gradient-to-r from-gold to-gold-soft text-primary-foreground shadow-[var(--shadow-gold)]"
@@ -237,14 +192,13 @@ function POSPage() {
                 }`}
               >
                 <span className="mr-1.5">{c.icon ?? "🌽"}</span>{c.name}
->>>>>>> cb9696df48d7aa87774d2acfa991ca2202ecc86c
               </button>
             );
           })}
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 overflow-y-auto pr-1 pb-4 auto-rows-min">
-          {isLoading ? (
+          {catsQ.isLoading || prodsQ.isLoading ? (
             <div className="col-span-full py-20 flex justify-center"><Loader2 className="size-8 animate-spin text-gold" /></div>
           ) : products.map((p) => (
             <button
@@ -285,7 +239,7 @@ function POSPage() {
                 />
                 {customerSearch && (
                   <div className="absolute top-full left-0 w-full bg-card border border-border rounded-lg shadow-xl z-50 max-h-40 overflow-y-auto mt-1">
-                    {customers.filter(c => c.name.toLowerCase().includes(customerSearch.toLowerCase())).map(c => (
+                    {customers.filter((c: any) => c.name.toLowerCase().includes(customerSearch.toLowerCase())).map((c: any) => (
                       <button
                         key={c.id}
                         className="w-full text-left p-2 hover:bg-gold/10 text-xs flex justify-between"

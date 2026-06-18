@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "./theme-provider";
 import { Button } from "./ui/button";
@@ -19,20 +18,4 @@ export function ThemeToggle() {
             <span className="sr-only">Cambiar tema</span>
         </Button>
     );
-=======
-import { Sun, Moon } from "lucide-react";
-import { useTheme } from "./ThemeProvider";
-
-export function ThemeToggle({ className = "" }: { className?: string }) {
-  const { theme, toggle } = useTheme();
-  return (
-    <button
-      onClick={toggle}
-      aria-label={theme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
-      className={`inline-flex items-center justify-center size-9 rounded-lg gold-border bg-card hover:bg-accent transition ${className}`}
-    >
-      {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
-    </button>
-  );
->>>>>>> cb9696df48d7aa87774d2acfa991ca2202ecc86c
 }

@@ -3,14 +3,10 @@ import { Outlet, createRootRouteWithContext, HeadContent, Scripts } from "@tanst
 import type { ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { Sidebar } from "@/components/Sidebar";
-<<<<<<< HEAD
 import { ThemeProvider } from "@/components/theme-provider";
 import { OfflineSync } from "@/components/OfflineSync";
 import { Toaster } from "sonner";
 import { Button } from "@/components/ui/button";
-=======
-import { ThemeProvider } from "@/components/ThemeProvider";
->>>>>>> cb9696df48d7aa87774d2acfa991ca2202ecc86c
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
@@ -37,7 +33,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   }),
   shellComponent: RootShell,
   component: RootComponent,
-  loadingComponent: () => (
+  pendingComponent: () => (
     <div className="flex min-h-screen items-center justify-center bg-background">
       <div className="flex flex-col items-center gap-4">
         <div className="size-12 border-4 border-gold border-t-transparent rounded-full animate-spin" />
@@ -78,16 +74,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-<<<<<<< HEAD
     <html lang="es">
-      <head><HeadContent /></head>
-=======
-    <html lang="es" className="dark">
       <head>
         <HeadContent />
-        <script dangerouslySetInnerHTML={{ __html: `try{var t=localStorage.getItem('theme');var c=document.documentElement.classList;if(t==='light')c.remove('dark');else c.add('dark');}catch(e){}` }} />
+        <script dangerouslySetInnerHTML={{ __html: `try{var t=localStorage.getItem('vite-ui-theme')||'system';var d=t==='dark'||(t==='system'&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.classList.toggle('dark',d);document.documentElement.classList.toggle('light',!d);}catch(e){}` }} />
       </head>
->>>>>>> cb9696df48d7aa87774d2acfa991ca2202ecc86c
       <body>{children}<Scripts /></body>
     </html>
   );
@@ -96,7 +87,6 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   return (
-<<<<<<< HEAD
     <ThemeProvider>
       <QueryClientProvider client={queryClient}>
         <div className="flex min-h-screen w-full bg-background text-foreground">
@@ -109,15 +99,5 @@ function RootComponent() {
         </div>
       </QueryClientProvider>
     </ThemeProvider>
-=======
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <div className="flex min-h-screen w-full">
-          <Sidebar />
-          <main className="flex-1 min-w-0"><Outlet /></main>
-        </div>
-      </ThemeProvider>
-    </QueryClientProvider>
->>>>>>> cb9696df48d7aa87774d2acfa991ca2202ecc86c
   );
 }

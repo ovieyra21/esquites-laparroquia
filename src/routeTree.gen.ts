@@ -15,11 +15,8 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as MIdRouteImport } from './routes/m.$id'
 import { Route as AuthenticatedProductosRouteImport } from './routes/_authenticated/productos'
 import { Route as AuthenticatedPosRouteImport } from './routes/_authenticated/pos'
-<<<<<<< HEAD
-import { Route as AuthenticatedInventarioRouteImport } from './routes/_authenticated/inventario'
-=======
 import { Route as AuthenticatedMenuRouteImport } from './routes/_authenticated/menu'
->>>>>>> cb9696df48d7aa87774d2acfa991ca2202ecc86c
+import { Route as AuthenticatedInventarioRouteImport } from './routes/_authenticated/inventario'
 import { Route as AuthenticatedHistorialRouteImport } from './routes/_authenticated/historial'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedConfiguracionRouteImport } from './routes/_authenticated/configuracion'
@@ -56,15 +53,14 @@ const AuthenticatedPosRoute = AuthenticatedPosRouteImport.update({
   path: '/pos',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-<<<<<<< HEAD
-const AuthenticatedInventarioRoute = AuthenticatedInventarioRouteImport.update({
-  id: '/inventario',
-  path: '/inventario',
-=======
 const AuthenticatedMenuRoute = AuthenticatedMenuRouteImport.update({
   id: '/menu',
   path: '/menu',
->>>>>>> cb9696df48d7aa87774d2acfa991ca2202ecc86c
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedInventarioRoute = AuthenticatedInventarioRouteImport.update({
+  id: '/inventario',
+  path: '/inventario',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedHistorialRoute = AuthenticatedHistorialRouteImport.update({
@@ -108,11 +104,8 @@ export interface FileRoutesByFullPath {
   '/configuracion': typeof AuthenticatedConfiguracionRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/historial': typeof AuthenticatedHistorialRoute
-<<<<<<< HEAD
   '/inventario': typeof AuthenticatedInventarioRoute
-=======
   '/menu': typeof AuthenticatedMenuRoute
->>>>>>> cb9696df48d7aa87774d2acfa991ca2202ecc86c
   '/pos': typeof AuthenticatedPosRoute
   '/productos': typeof AuthenticatedProductosRoute
   '/m/$id': typeof MIdRoute
@@ -126,11 +119,8 @@ export interface FileRoutesByTo {
   '/configuracion': typeof AuthenticatedConfiguracionRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/historial': typeof AuthenticatedHistorialRoute
-<<<<<<< HEAD
   '/inventario': typeof AuthenticatedInventarioRoute
-=======
   '/menu': typeof AuthenticatedMenuRoute
->>>>>>> cb9696df48d7aa87774d2acfa991ca2202ecc86c
   '/pos': typeof AuthenticatedPosRoute
   '/productos': typeof AuthenticatedProductosRoute
   '/m/$id': typeof MIdRoute
@@ -146,11 +136,8 @@ export interface FileRoutesById {
   '/_authenticated/configuracion': typeof AuthenticatedConfiguracionRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/historial': typeof AuthenticatedHistorialRoute
-<<<<<<< HEAD
   '/_authenticated/inventario': typeof AuthenticatedInventarioRoute
-=======
   '/_authenticated/menu': typeof AuthenticatedMenuRoute
->>>>>>> cb9696df48d7aa87774d2acfa991ca2202ecc86c
   '/_authenticated/pos': typeof AuthenticatedPosRoute
   '/_authenticated/productos': typeof AuthenticatedProductosRoute
   '/m/$id': typeof MIdRoute
@@ -166,11 +153,8 @@ export interface FileRouteTypes {
     | '/configuracion'
     | '/dashboard'
     | '/historial'
-<<<<<<< HEAD
     | '/inventario'
-=======
     | '/menu'
->>>>>>> cb9696df48d7aa87774d2acfa991ca2202ecc86c
     | '/pos'
     | '/productos'
     | '/m/$id'
@@ -184,11 +168,8 @@ export interface FileRouteTypes {
     | '/configuracion'
     | '/dashboard'
     | '/historial'
-<<<<<<< HEAD
     | '/inventario'
-=======
     | '/menu'
->>>>>>> cb9696df48d7aa87774d2acfa991ca2202ecc86c
     | '/pos'
     | '/productos'
     | '/m/$id'
@@ -203,11 +184,8 @@ export interface FileRouteTypes {
     | '/_authenticated/configuracion'
     | '/_authenticated/dashboard'
     | '/_authenticated/historial'
-<<<<<<< HEAD
     | '/_authenticated/inventario'
-=======
     | '/_authenticated/menu'
->>>>>>> cb9696df48d7aa87774d2acfa991ca2202ecc86c
     | '/_authenticated/pos'
     | '/_authenticated/productos'
     | '/m/$id'
@@ -264,19 +242,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-<<<<<<< HEAD
-    '/_authenticated/inventario': {
-      id: '/_authenticated/inventario'
-      path: '/inventario'
-      fullPath: '/inventario'
-      preLoaderRoute: typeof AuthenticatedInventarioRouteImport
-=======
     '/_authenticated/menu': {
       id: '/_authenticated/menu'
       path: '/menu'
       fullPath: '/menu'
       preLoaderRoute: typeof AuthenticatedMenuRouteImport
->>>>>>> cb9696df48d7aa87774d2acfa991ca2202ecc86c
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/inventario': {
+      id: '/_authenticated/inventario'
+      path: '/inventario'
+      fullPath: '/inventario'
+      preLoaderRoute: typeof AuthenticatedInventarioRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/historial': {
@@ -331,11 +308,8 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedConfiguracionRoute: typeof AuthenticatedConfiguracionRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedHistorialRoute: typeof AuthenticatedHistorialRoute
-<<<<<<< HEAD
   AuthenticatedInventarioRoute: typeof AuthenticatedInventarioRoute
-=======
   AuthenticatedMenuRoute: typeof AuthenticatedMenuRoute
->>>>>>> cb9696df48d7aa87774d2acfa991ca2202ecc86c
   AuthenticatedPosRoute: typeof AuthenticatedPosRoute
   AuthenticatedProductosRoute: typeof AuthenticatedProductosRoute
 }
@@ -347,11 +321,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedConfiguracionRoute: AuthenticatedConfiguracionRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedHistorialRoute: AuthenticatedHistorialRoute,
-<<<<<<< HEAD
   AuthenticatedInventarioRoute: AuthenticatedInventarioRoute,
-=======
   AuthenticatedMenuRoute: AuthenticatedMenuRoute,
->>>>>>> cb9696df48d7aa87774d2acfa991ca2202ecc86c
   AuthenticatedPosRoute: AuthenticatedPosRoute,
   AuthenticatedProductosRoute: AuthenticatedProductosRoute,
 }
@@ -368,13 +339,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
