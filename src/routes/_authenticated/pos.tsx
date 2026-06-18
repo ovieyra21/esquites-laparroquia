@@ -49,7 +49,7 @@ function POSPage() {
   });
 
   const [customerSearch, setCustomerSearch] = useState("");
-  const selectedCustomer = customers.find(c => c.id === cart.customerId);
+  const selectedCustomer = customers.find((c: any) => c.id === cart.customerId);
 
   const products: Product[] = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -118,7 +118,7 @@ function POSPage() {
         localStorage.setItem("buffered_sales", JSON.stringify(buffer));
         toast.warning("Sin conexión. Venta guardada localmente.");
       } else {
-        const result = await sSale(saleData);
+        const result = await sSale({ data: saleData });
         saleId = result.saleId;
         autoPrint = result.autoPrint;
       }
@@ -144,7 +144,7 @@ function POSPage() {
       cart.clear();
 
       if (autoPrint && saleId) {
-        toast.promise(sPrint({ saleId }), {
+        toast.promise(sPrint({ data: { saleId } }), {
           loading: "Imprimiendo ticket...",
           success: "Ticket impreso",
           error: (e) => `Error al imprimir: ${e.message}`,
@@ -239,7 +239,7 @@ function POSPage() {
                 />
                 {customerSearch && (
                   <div className="absolute top-full left-0 w-full bg-card border border-border rounded-lg shadow-xl z-50 max-h-40 overflow-y-auto mt-1">
-                    {customers.filter(c => c.name.toLowerCase().includes(customerSearch.toLowerCase())).map(c => (
+                    {customers.filter((c: any) => c.name.toLowerCase().includes(customerSearch.toLowerCase())).map((c: any) => (
                       <button
                         key={c.id}
                         className="w-full text-left p-2 hover:bg-gold/10 text-xs flex justify-between"

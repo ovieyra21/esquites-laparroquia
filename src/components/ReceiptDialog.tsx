@@ -28,7 +28,7 @@ export function ReceiptDialog({
   const handleThermalPrint = async () => {
     setPrinting(true);
     try {
-      await printThermal({ saleId: sale.id });
+      await printThermal({ data: { saleId: sale.id } });
       toast.success("Imprimiendo ticket...");
     } catch (e: any) {
       toast.error(`Error: ${e.message}`);

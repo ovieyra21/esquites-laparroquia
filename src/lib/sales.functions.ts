@@ -45,7 +45,7 @@ export const saveSale = createServerFn({ method: "POST" })
     const { data: sale, error: saleError } = await supabase
       .from("sales")
       .insert({
-        folio: data.folio, // Use string folio to support terminal prefixes
+        folio: Number(data.folio),
         user_id: userId,
         cash_register_id: reg.id,
         subtotal: data.subtotal,
@@ -136,11 +136,10 @@ export const saveSale = createServerFn({ method: "POST" })
       if (item.modifiers.length > 0) {
         const mods = item.modifiers.map((m: any) => ({
           sale_item_id: saleItem.id,
-          modifier_id: m.modifierId,
           modifier_name: m.modifierName,
           extra_price: m.extraPrice
         }));
-        const { error: modsError } = await supabase.from("sale_item_modifiers").insert(mods);
+        const { error: modsError } = await supabase.from("sale_item_modifiers").insert(mods as any);
         if (modsError) throw new Error(modsError.message);
       }
     }
