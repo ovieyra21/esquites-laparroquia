@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import type { CartItem } from "./cart";
 
-export type PaymentMethod = "efectivo" | "tarjeta" | "transferencia" | "mixto";
+export type PaymentMethod = "efectivo" | "tarjeta" | "transferencia" | "mixto" | "digital";
 
 export type Sale = {
   id: string;

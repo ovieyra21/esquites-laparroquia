@@ -2,13 +2,14 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Banknote, CreditCard, ArrowLeftRight, Shuffle, Check } from "lucide-react";
+import { Banknote, CreditCard, ArrowLeftRight, Shuffle, Check, QrCode } from "lucide-react";
 import { fmt } from "@/store/cart";
 import type { PaymentMethod } from "@/store/sales";
 
 const METHODS: { id: PaymentMethod; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { id: "efectivo", label: "Efectivo", icon: Banknote },
   { id: "tarjeta", label: "Tarjeta", icon: CreditCard },
+  { id: "digital", label: "Pago digital", icon: QrCode },
   { id: "transferencia", label: "Transferencia", icon: ArrowLeftRight },
   { id: "mixto", label: "Mixto", icon: Shuffle },
 ];
@@ -30,7 +31,7 @@ export function CheckoutDialog({
   const [received, setReceived] = useState<number>(0);
 
   const change = Math.max(0, received - total);
-  const canConfirm = method !== "efectivo" || received >= total;
+  const canConfirm = method === "digital" || method !== "efectivo" || received >= total;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

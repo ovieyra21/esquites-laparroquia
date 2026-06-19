@@ -19,8 +19,7 @@ import process from "node:process";
 export function getServerConfig() {
   return {
     nodeEnv: process.env.NODE_ENV,
-    // Add server-only values here, e.g.:
-    //   databaseUrl: process.env.DATABASE_URL,
-    //   stripeSecretKey: process.env.STRIPE_SECRET_KEY,
+    mercadopagoAccessToken: process.env.MERCADOPAGO_ACCESS_TOKEN,
+    mercadopagoWebhookSecret: process.env.MERCADOPAGO_WEBHOOK_SECRET,
   };
 }

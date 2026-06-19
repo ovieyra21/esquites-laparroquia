@@ -135,3 +135,106 @@ export const getRegisterHistory = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     return data ?? [];
   });
+
+const cutDetailInput = z.object({ registerId: z.string().uuid() });
+
+export type CashCutDetail = {
+  id: string;
+  openedAt: string;
+  closedAt: string | null;
+  cashierName: string;
+  openingAmount: number;
+  openingBreakdown: Record<string, number> | null;
+  closingBreakdown: Record<string, number> | null;
+  salesCash: number;
+  salesCard: number;
+  salesTransfer: number;
+  salesCount: number;
+  cashIn: number;
+  cashOut: number;
+  expectedAmount: number;
+  realAmount: number;
+  difference: number;
+  notes: string | null;
+  salesByHour: { hour: string; total: number; count: number }[];
+  topProducts: { name: string; quantity: number }[];
+};
+
+export const getCashCutDetail = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: any) => cutDetailInput.parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+
+    const { data: reg, error } = await supabase
+      .from("cash_register")
+      .select("*")
+      .eq("id", data.registerId)
+      .single();
+
+    if (error || !reg) throw new Error("Corte no encontrado.");
+
+    // Get cashier name
+    const { data: profile } = reg.user_id
+      ? await supabase.from("profiles").select("full_name").eq("id", reg.user_id).maybeSingle()
+      : { data: null };
+
+    // Get sales for this register
+    const { data: sales } = await supabase
+      .from("sales")
+      .select("id, total, created_at, payment_method, cancelled, sale_items(product_name, quantity)")
+      .eq("cash_register_id", data.registerId);
+
+    const activeSales = (sales ?? []).filter((s: any) => !s.cancelled);
+
+    // Sales by hour
+    const hourlyMap: Record<number, { total: number; count: number }> = {};
+    for (const s of activeSales) {
+      const hour = new Date(s.created_at!).getHours();
+      if (!hourlyMap[hour]) hourlyMap[hour] = { total: 0, count: 0 };
+      hourlyMap[hour].total += Number(s.total ?? 0);
+      hourlyMap[hour].count += 1;
+    }
+
+    // Top products
+    const productMap: Record<string, number> = {};
+    for (const s of activeSales) {
+      for (const item of (s as any).sale_items ?? []) {
+        const name = item.product_name ?? "Producto";
+        productMap[name] = (productMap[name] || 0) + (item.quantity ?? 0);
+      }
+    }
+
+    // Parse breakdowns
+    let openingBreakdown: Record<string, number> | null = null;
+    let closingBreakdown: Record<string, number> | null = null;
+    try { if (reg.opening_breakdown) openingBreakdown = reg.opening_breakdown as any; } catch {}
+    try { if (reg.closing_breakdown) closingBreakdown = reg.closing_breakdown as any; } catch {}
+
+    return {
+      id: reg.id,
+      openedAt: reg.opened_at,
+      closedAt: reg.closed_at,
+      cashierName: profile?.data?.full_name ?? "Cajero",
+      openingAmount: Number(reg.opening_amount),
+      openingBreakdown,
+      closingBreakdown,
+      salesCash: Number(reg.total_sales_cash ?? 0),
+      salesCard: Number(reg.total_sales_card ?? 0),
+      salesTransfer: Number(reg.total_sales_transfer ?? 0),
+      salesCount: activeSales.length,
+      cashIn: 0, // Would need cash_movements query — simplified
+      cashOut: 0,
+      expectedAmount: Number(reg.expected_amount ?? 0),
+      realAmount: Number(reg.real_amount ?? 0),
+      difference: Number(reg.difference ?? 0),
+      notes: reg.notes,
+      salesByHour: Object.entries(hourlyMap)
+        .map(([h, v]) => ({ hour: `${h}:00`, ...v }))
+        .sort((a, b) => parseInt(a.hour) - parseInt(b.hour)),
+      topProducts: Object.entries(productMap)
+        .map(([name, quantity]) => ({ name, quantity }))
+        .sort((a, b) => b.quantity - a.quantity)
+        .slice(0, 5),
+    } as CashCutDetail;
+  });

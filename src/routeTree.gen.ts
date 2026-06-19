@@ -12,12 +12,15 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as TicketIdRouteImport } from './routes/ticket.$id'
 import { Route as MIdRouteImport } from './routes/m.$id'
+import { Route as CorteIdRouteImport } from './routes/corte.$id'
 import { Route as AuthenticatedProductosRouteImport } from './routes/_authenticated/productos'
 import { Route as AuthenticatedPosRouteImport } from './routes/_authenticated/pos'
 import { Route as AuthenticatedMenuRouteImport } from './routes/_authenticated/menu'
 import { Route as AuthenticatedInventarioRouteImport } from './routes/_authenticated/inventario'
 import { Route as AuthenticatedHistorialRouteImport } from './routes/_authenticated/historial'
+import { Route as AuthenticatedGastosRouteImport } from './routes/_authenticated/gastos'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedConfiguracionRouteImport } from './routes/_authenticated/configuracion'
 import { Route as AuthenticatedCocinaRouteImport } from './routes/_authenticated/cocina'
@@ -38,9 +41,19 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TicketIdRoute = TicketIdRouteImport.update({
+  id: '/ticket/$id',
+  path: '/ticket/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MIdRoute = MIdRouteImport.update({
   id: '/m/$id',
   path: '/m/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CorteIdRoute = CorteIdRouteImport.update({
+  id: '/corte/$id',
+  path: '/corte/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedProductosRoute = AuthenticatedProductosRouteImport.update({
@@ -66,6 +79,11 @@ const AuthenticatedInventarioRoute = AuthenticatedInventarioRouteImport.update({
 const AuthenticatedHistorialRoute = AuthenticatedHistorialRouteImport.update({
   id: '/historial',
   path: '/historial',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedGastosRoute = AuthenticatedGastosRouteImport.update({
+  id: '/gastos',
+  path: '/gastos',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
@@ -103,12 +121,15 @@ export interface FileRoutesByFullPath {
   '/cocina': typeof AuthenticatedCocinaRoute
   '/configuracion': typeof AuthenticatedConfiguracionRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/gastos': typeof AuthenticatedGastosRoute
   '/historial': typeof AuthenticatedHistorialRoute
   '/inventario': typeof AuthenticatedInventarioRoute
   '/menu': typeof AuthenticatedMenuRoute
   '/pos': typeof AuthenticatedPosRoute
   '/productos': typeof AuthenticatedProductosRoute
+  '/corte/$id': typeof CorteIdRoute
   '/m/$id': typeof MIdRoute
+  '/ticket/$id': typeof TicketIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -118,12 +139,15 @@ export interface FileRoutesByTo {
   '/cocina': typeof AuthenticatedCocinaRoute
   '/configuracion': typeof AuthenticatedConfiguracionRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/gastos': typeof AuthenticatedGastosRoute
   '/historial': typeof AuthenticatedHistorialRoute
   '/inventario': typeof AuthenticatedInventarioRoute
   '/menu': typeof AuthenticatedMenuRoute
   '/pos': typeof AuthenticatedPosRoute
   '/productos': typeof AuthenticatedProductosRoute
+  '/corte/$id': typeof CorteIdRoute
   '/m/$id': typeof MIdRoute
+  '/ticket/$id': typeof TicketIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -135,12 +159,15 @@ export interface FileRoutesById {
   '/_authenticated/cocina': typeof AuthenticatedCocinaRoute
   '/_authenticated/configuracion': typeof AuthenticatedConfiguracionRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/gastos': typeof AuthenticatedGastosRoute
   '/_authenticated/historial': typeof AuthenticatedHistorialRoute
   '/_authenticated/inventario': typeof AuthenticatedInventarioRoute
   '/_authenticated/menu': typeof AuthenticatedMenuRoute
   '/_authenticated/pos': typeof AuthenticatedPosRoute
   '/_authenticated/productos': typeof AuthenticatedProductosRoute
+  '/corte/$id': typeof CorteIdRoute
   '/m/$id': typeof MIdRoute
+  '/ticket/$id': typeof TicketIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -152,12 +179,15 @@ export interface FileRouteTypes {
     | '/cocina'
     | '/configuracion'
     | '/dashboard'
+    | '/gastos'
     | '/historial'
     | '/inventario'
     | '/menu'
     | '/pos'
     | '/productos'
+    | '/corte/$id'
     | '/m/$id'
+    | '/ticket/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -167,12 +197,15 @@ export interface FileRouteTypes {
     | '/cocina'
     | '/configuracion'
     | '/dashboard'
+    | '/gastos'
     | '/historial'
     | '/inventario'
     | '/menu'
     | '/pos'
     | '/productos'
+    | '/corte/$id'
     | '/m/$id'
+    | '/ticket/$id'
   id:
     | '__root__'
     | '/'
@@ -183,19 +216,24 @@ export interface FileRouteTypes {
     | '/_authenticated/cocina'
     | '/_authenticated/configuracion'
     | '/_authenticated/dashboard'
+    | '/_authenticated/gastos'
     | '/_authenticated/historial'
     | '/_authenticated/inventario'
     | '/_authenticated/menu'
     | '/_authenticated/pos'
     | '/_authenticated/productos'
+    | '/corte/$id'
     | '/m/$id'
+    | '/ticket/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  CorteIdRoute: typeof CorteIdRoute
   MIdRoute: typeof MIdRoute
+  TicketIdRoute: typeof TicketIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -221,11 +259,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/ticket/$id': {
+      id: '/ticket/$id'
+      path: '/ticket/$id'
+      fullPath: '/ticket/$id'
+      preLoaderRoute: typeof TicketIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/m/$id': {
       id: '/m/$id'
       path: '/m/$id'
       fullPath: '/m/$id'
       preLoaderRoute: typeof MIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/corte/$id': {
+      id: '/corte/$id'
+      path: '/corte/$id'
+      fullPath: '/corte/$id'
+      preLoaderRoute: typeof CorteIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/productos': {
@@ -261,6 +313,13 @@ declare module '@tanstack/react-router' {
       path: '/historial'
       fullPath: '/historial'
       preLoaderRoute: typeof AuthenticatedHistorialRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/gastos': {
+      id: '/_authenticated/gastos'
+      path: '/gastos'
+      fullPath: '/gastos'
+      preLoaderRoute: typeof AuthenticatedGastosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/dashboard': {
@@ -307,6 +366,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCocinaRoute: typeof AuthenticatedCocinaRoute
   AuthenticatedConfiguracionRoute: typeof AuthenticatedConfiguracionRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedGastosRoute: typeof AuthenticatedGastosRoute
   AuthenticatedHistorialRoute: typeof AuthenticatedHistorialRoute
   AuthenticatedInventarioRoute: typeof AuthenticatedInventarioRoute
   AuthenticatedMenuRoute: typeof AuthenticatedMenuRoute
@@ -320,6 +380,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCocinaRoute: AuthenticatedCocinaRoute,
   AuthenticatedConfiguracionRoute: AuthenticatedConfiguracionRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedGastosRoute: AuthenticatedGastosRoute,
   AuthenticatedHistorialRoute: AuthenticatedHistorialRoute,
   AuthenticatedInventarioRoute: AuthenticatedInventarioRoute,
   AuthenticatedMenuRoute: AuthenticatedMenuRoute,
@@ -334,8 +395,20 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  CorteIdRoute: CorteIdRoute,
   MIdRoute: MIdRoute,
+  TicketIdRoute: TicketIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

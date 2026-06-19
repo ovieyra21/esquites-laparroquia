@@ -1,9 +1,10 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { ShoppingCart, History, LayoutDashboard, Box, QrCode, Settings, LogOut, Wallet, Users, ChefHat } from "lucide-react";
+import { ShoppingCart, History, LayoutDashboard, Box, QrCode, Settings, LogOut, Wallet, Users, ChefHat, Receipt } from "lucide-react";
 import { Logo } from "./Logo";
 import { ThemeToggle } from "./ThemeToggle";
 import { useAuth, hasRole } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 const NAV = [
@@ -12,7 +13,8 @@ const NAV = [
   { to: "/historial", label: "Historial", icon: History, roles: ["admin", "supervisor"] as const },
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["admin", "supervisor"] as const },
   { to: "/inventario", label: "Inventario", icon: Box, roles: ["admin", "supervisor"] as const },
-  { to: "/cocina", label: "Cocina", icon: ChefHat, roles: ["admin", "supervisor", "cocinero"] as const },
+  { to: "/gastos", label: "Gastos", icon: Receipt, roles: ["admin", "supervisor"] as const },
+  { to: "/cocina", label: "Cocina", icon: ChefHat, roles: ["admin", "supervisor", "cocinero"] as const, badge: "kds" },
   { to: "/clientes", label: "Clientes", icon: Users, roles: ["admin", "supervisor"] as const },
   { to: "/configuracion", label: "Configuración", icon: Settings, roles: ["admin"] as const },
 ];
@@ -22,11 +24,24 @@ export function Sidebar() {
   const navigate = useNavigate();
   const { user, roles, fullName } = useAuth();
 
+  // Pending kitchen orders count
+  const { data: kdsCount } = useQuery({
+    queryKey: ["kds-sidebar-count"],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("sales")
+        .select("*", { count: "exact", head: true })
+        .in("kds_status", ["pendiente", "preparando"]);
+      if (error) return 0;
+      return count ?? 0;
+    },
+    refetchInterval: 20_000,
+  });
+
   if (!user) return null;
   if (pathname === "/auth") return null;
 
   const primaryRole = roles[0] ?? "cajero";
-
   const visible = NAV.filter((n) => roles.length === 0 || hasRole(roles as any, ...(n.roles as any)));
 
   const onLogout = async () => {
@@ -48,19 +63,25 @@ export function Sidebar() {
         <ThemeToggle />
       </div>
       <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-        {visible.map(({ to, label, icon: Icon }) => {
+        {visible.map(({ to, label, icon: Icon, badge }) => {
           const active = pathname.startsWith(to);
           return (
             <Link
               key={to}
               to={to}
-              className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all ${active
-                ? "bg-linear-to-r from-gold/20 to-transparent text-foreground gold-border"
-                : "text-muted-foreground hover:bg-sidebar-accent hover:text-foreground"
-                }`}
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all relative ${
+                active
+                  ? "bg-linear-to-r from-gold/20 to-transparent text-foreground gold-border"
+                  : "text-muted-foreground hover:bg-sidebar-accent hover:text-foreground"
+              }`}
             >
               <Icon className="size-5" />
               <span className="font-medium">{label}</span>
+              {badge === "kds" && kdsCount && kdsCount > 0 && (
+                <span className="ml-auto bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center leading-none">
+                  {kdsCount}
+                </span>
+              )}
             </Link>
           );
         })}

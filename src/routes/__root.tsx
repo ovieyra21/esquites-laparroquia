@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Outlet, createRootRouteWithContext, HeadContent, Scripts } from "@tanstack/react-router";
+import { Outlet, createRootRouteWithContext, HeadContent, Scripts, useRouterState } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { Sidebar } from "@/components/Sidebar";
@@ -86,15 +86,18 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const routerState = useRouterState();
+  const isTicketRoute = routerState.location.pathname.startsWith("/ticket/");
+
   return (
     <ThemeProvider>
       <QueryClientProvider client={queryClient}>
         <div className="flex min-h-screen w-full bg-background text-foreground">
-          <Sidebar />
-          <main className="flex-1 min-w-0">
+          {!isTicketRoute && <Sidebar />}
+          <main className={isTicketRoute ? "w-full" : "flex-1 min-w-0"}>
             <Outlet />
-            <OfflineSync />
-            <Toaster position="top-right" richColors />
+            {!isTicketRoute && <OfflineSync />}
+            {!isTicketRoute && <Toaster position="top-right" richColors />}
           </main>
         </div>
       </QueryClientProvider>

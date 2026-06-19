@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import type { ChangeEvent } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Save, Printer, Building2, Loader2, TestTube2, Image as ImageIcon, X } from "lucide-react";
+import { Save, Printer, Building2, Loader2, TestTube2, Monitor, Image as ImageIcon, X } from "lucide-react";
 import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getSettings, updateSettings } from "@/lib/settings.functions";
 import { testPrinter } from "@/lib/printer.functions";
+import { buildTicketHash } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/configuracion")({
   ssr: false,
@@ -132,6 +133,25 @@ function ConfigPage() {
     }
   };
 
+  const onBrowserTest = () => {
+    const hash = buildTicketHash({
+      folio: "PRUEBA",
+      createdAt: new Date().toISOString(),
+      cashier: "Sistema",
+      subtotal: 0,
+      tax: 0,
+      total: 0,
+      paymentMethod: "efectivo",
+      cashReceived: null,
+      changeAmount: null,
+      items: [
+        { name: "Ticket de prueba", quantity: 1, unitPrice: 0, modifiers: ["Impresión correcta ✓"] },
+      ],
+    });
+    window.open(`/ticket/print#${hash}`, "_blank", "width=380,height=600");
+    toast.success("Abriendo ticket de prueba para imprimir...");
+  };
+
   const onLogoUpload = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -202,11 +222,18 @@ function ConfigPage() {
               <div><Label>Ancho del papel</Label><Select value={String(s.printer_width ?? 80)} onValueChange={(v) => set("printer_width", Number(v))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="58">58 mm</SelectItem><SelectItem value="80">80 mm</SelectItem></SelectContent></Select></div>
             </div>
             <div className="space-y-3 pt-2 border-t border-border">
-              <div className="flex items-center justify-between"><div><Label>Imprimir automáticamente</Label><p className="text-xs text-muted-foreground">Envía el ticket al cobrar.</p></div><Switch checked={!!s.auto_print} onCheckedChange={(v) => set("auto_print", v)} /></div>
-              <div className="flex items-center justify-between"><div><Label>Corte automático</Label><p className="text-xs text-muted-foreground">Corta el papel al final del ticket.</p></div><Switch checked={!!s.auto_cut} onCheckedChange={(v) => set("auto_cut", v)} /></div>
-              <div className="flex items-center justify-between"><div><Label>Abrir cajón de dinero</Label><p className="text-xs text-muted-foreground">Envía pulso de apertura tras imprimir.</p></div><Switch checked={!!s.open_drawer} onCheckedChange={(v) => set("open_drawer", v)} /></div>
+              <div className="flex items-center justify-between"><div><Label>Imprimir automáticamente</Label><p className="text-xs text-muted-foreground">Abre el ticket en ventana nueva al cobrar (impresión por navegador).</p></div><Switch checked={!!s.auto_print} onCheckedChange={(v) => set("auto_print", v)} /></div>
+              <div className="flex items-center justify-between"><div><Label>Corte automático</Label><p className="text-xs text-muted-foreground">Corta el papel al final del ticket (solo impresora térmica).</p></div><Switch checked={!!s.auto_cut} onCheckedChange={(v) => set("auto_cut", v)} /></div>
+              <div className="flex items-center justify-between"><div><Label>Abrir cajón de dinero</Label><p className="text-xs text-muted-foreground">Envía pulso de apertura tras imprimir (solo impresora térmica).</p></div><Switch checked={!!s.open_drawer} onCheckedChange={(v) => set("open_drawer", v)} /></div>
             </div>
-            <div className="flex justify-end pt-2"><Button variant="outline" onClick={onTest} disabled={testing || !s.printer_ip} className="gap-2">{testing ? <Loader2 className="size-4 animate-spin" /> : <TestTube2 className="size-4" />} Imprimir ticket de prueba</Button></div>
+            <div className="flex flex-wrap justify-end gap-2 pt-2">
+              <Button variant="default" onClick={onBrowserTest} className="gap-2 bg-success hover:bg-success/90">
+                <Monitor className="size-4" /> Probar impresión (navegador)
+              </Button>
+              <Button variant="outline" onClick={onTest} disabled={testing || !s.printer_ip} className="gap-2">
+                {testing ? <Loader2 className="size-4 animate-spin" /> : <TestTube2 className="size-4" />} Probar impresora térmica
+              </Button>
+            </div>
           </Card>
         </TabsContent>
       </Tabs>

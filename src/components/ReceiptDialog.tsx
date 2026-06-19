@@ -1,14 +1,15 @@
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Printer, Download, Share2, RotateCcw, Loader2 } from "lucide-react";
+import { Printer, Share2, RotateCcw, Loader2, Monitor } from "lucide-react";
 import { fmt } from "@/store/cart";
 import type { Sale } from "@/store/sales";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useServerFn } from "@tanstack/react-start";
 import { printSaleTicket } from "@/lib/printer.functions";
+import { buildTicketHash } from "@/lib/utils";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import logoTicket from "@/assets/logo-ticket.png";
 
 export function ReceiptDialog({
@@ -24,6 +25,28 @@ export function ReceiptDialog({
   const date = new Date(sale.createdAt);
   const printThermal = useServerFn(printSaleTicket);
   const [printing, setPrinting] = useState(false);
+
+  const handleBrowserPrint = useCallback(() => {
+    if (!sale) return;
+    const hash = buildTicketHash({
+      folio: sale.folio,
+      createdAt: sale.createdAt,
+      cashier: sale.cashier,
+      subtotal: sale.subtotal,
+      tax: sale.tax,
+      total: sale.total,
+      paymentMethod: sale.payment,
+      cashReceived: sale.received ?? null,
+      changeAmount: sale.change ?? null,
+      items: sale.items.map((i) => ({
+        name: i.product.name,
+        quantity: i.quantity,
+        unitPrice: i.unitPrice,
+        modifiers: i.modifiers.filter((m) => m.optionLabel).map((m) => m.optionLabel),
+      })),
+    });
+    window.open(`/ticket/print#${hash}`, "_blank", "width=380,height=600");
+  }, [sale]);
 
   const handleThermalPrint = async () => {
     setPrinting(true);
@@ -90,18 +113,22 @@ export function ReceiptDialog({
         </div>
 
         <div className="grid grid-cols-5 gap-2 p-3 bg-card">
-          <Button variant="outline" size="sm" onClick={() => window.print()} title="Imprimir navegador"><Printer className="size-4" /></Button>
+          <Button variant="default" size="sm" onClick={handleBrowserPrint} className="bg-success hover:bg-success/90" title="Imprimir ticket (navegador)">
+            <Monitor className="size-4" />
+          </Button>
           <Button
-            variant="default"
+            variant="outline"
             size="sm"
             onClick={handleThermalPrint}
             disabled={printing}
-            className="bg-gold hover:bg-gold/90 text-primary-foreground"
-            title="Imprimir térmica"
+            className="border-gold/40"
+            title="Imprimir térmica (red local)"
           >
             {printing ? <Loader2 className="size-4 animate-spin" /> : <Printer className="size-4" />}
           </Button>
-          <Button variant="outline" size="sm"><Download className="size-4" /></Button>
+          <Button variant="outline" size="sm" onClick={() => window.print()} title="Imprimir recibo (diálogo)">
+            <Printer className="size-4" />
+          </Button>
           <Button variant="outline" size="sm"><Share2 className="size-4" /></Button>
           <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}><RotateCcw className="size-4" /></Button>
         </div>

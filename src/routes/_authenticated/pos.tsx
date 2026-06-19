@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef, useCallback } from "react";
 import { Search, Trash2, Plus, Minus, X, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -11,10 +11,11 @@ import { useCart, calcTotals, fmt } from "@/store/cart";
 import { useSales, nextFolio, type PaymentMethod } from "@/store/sales";
 import { ProductModifierDialog } from "@/components/ProductModifierDialog";
 import { CheckoutDialog } from "@/components/CheckoutDialog";
+import { PaymentQRDialog } from "@/components/PaymentQRDialog";
 import { ReceiptDialog } from "@/components/ReceiptDialog";
 import { saveSale } from "@/lib/sales.functions";
-import { printSaleTicket } from "@/lib/printer.functions";
 import { crmApi } from "@/lib/crm.functions";
+import { buildTicketHash } from "@/lib/utils";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/pos")({
@@ -38,6 +39,8 @@ function POSPage() {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [lastSale, setLastSale] = useState<any>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [qrDialogOpen, setQrDialogOpen] = useState(false);
+  const [pendingDigitalSale, setPendingDigitalSale] = useState<any>(null);
 
   const cart = useCart();
   const addSale = useSales((s) => s.addSale);
@@ -50,6 +53,82 @@ function POSPage() {
 
   const [customerSearch, setCustomerSearch] = useState("");
   const selectedCustomer = customers.find((c: any) => c.id === cart.customerId);
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  // ─── Sound Effect ───
+  const playSaleSound = useCallback(() => {
+    try {
+      const ctx = new AudioContext();
+      // Cash register "cha-ching" — two quick rising tones
+      const now = ctx.currentTime;
+      [523.25, 659.25, 783.99].forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "triangle";
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.12, now + i * 0.08);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.25);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start(now + i * 0.08);
+        osc.stop(now + i * 0.08 + 0.3);
+      });
+    } catch { /* Audio not available */ }
+  }, []);
+
+  // ─── Keyboard Shortcuts ───
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      // Ignore if typing in an input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
+      const key = e.key.toLowerCase();
+
+      // / or Ctrl+K → focus search
+      if (key === "/" || (e.ctrlKey && key === "k")) {
+        e.preventDefault();
+        searchRef.current?.focus();
+        return;
+      }
+
+      // Escape → clear search / close modal dialogs
+      if (key === "escape") {
+        if (query) { setQuery(""); return; }
+        if (modProduct) { setModProduct(null); return; }
+        if (checkoutOpen) { setCheckoutOpen(false); return; }
+        if (lastSale) { setLastSale(null); return; }
+        return;
+      }
+
+      // F1-F9 → select category by index
+      const catNum = parseInt(key);
+      if (key.startsWith("f") && key.length > 1) {
+        const fn = parseInt(key.slice(1));
+        if (fn >= 1 && fn <= Math.min(9, categories.length)) {
+          e.preventDefault();
+          setQuery("");
+          setCategoryId(categories[fn - 1].id);
+          return;
+        }
+      }
+
+      // Enter → open checkout if cart has items
+      if (key === "enter" && cart.items.length > 0 && !checkoutOpen) {
+        e.preventDefault();
+        setCheckoutOpen(true);
+        return;
+      }
+
+      // Numpad + / - for last cart item qty
+      if (cart.items.length > 0) {
+        const lastItem = cart.items[cart.items.length - 1];
+        if (key === "+" || key === "=") { cart.setQty(lastItem.uid, lastItem.quantity + 1); return; }
+        if (key === "-") { cart.setQty(lastItem.uid, lastItem.quantity - 1); return; }
+      }
+    };
+
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [query, categories, cart.items, checkoutOpen, modProduct, lastSale]);
 
   const products: Product[] = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -80,9 +159,42 @@ function POSPage() {
   };
 
   const sSale = useServerFn(saveSale);
-  const sPrint = useServerFn(printSaleTicket);
+
+  const openTicketWindow = (saleData: { folio: string; createdAt: string; subtotal: number; tax: number; total: number; paymentMethod: string; cashReceived?: number; changeAmount?: number; items: { name: string; quantity: number; unitPrice: number; modifiers: string[] }[] }) => {
+    const hash = buildTicketHash({ ...saleData, cashier: "Cajero" });
+    window.open(`/ticket/print#${hash}`, "_blank", "width=380,height=600");
+  };
 
   const handleConfirm = async (method: PaymentMethod, received?: number, change?: number) => {
+    // Digital payment: open QR dialog, save after payment confirmed
+    if (method === "digital") {
+      const folio = nextFolio();
+      const saleData = {
+        folio,
+        subtotal: totals.subtotal,
+        tax: totals.tax,
+        total: totals.total,
+        paymentMethod: method,
+        customerId: cart.customerId || undefined,
+        items: cart.items.map(i => ({
+          productId: i.product.id,
+          productName: i.product.name,
+          quantity: i.quantity,
+          unitPrice: i.unitPrice,
+          modifiers: i.modifiers.map(m => ({
+            modifierName: m.optionLabel,
+            extraPrice: m.extraPrice
+          }))
+        }))
+      };
+      // Pre-generate a saleId for the QR reference
+      const tempId = crypto.randomUUID();
+      setPendingDigitalSale({ ...saleData, saleId: tempId, folio });
+      setCheckoutOpen(false);
+      setQrDialogOpen(true);
+      return;
+    }
+
     setIsSaving(true);
     try {
       const folio = nextFolio();
@@ -142,12 +254,24 @@ function POSPage() {
       setLastSale(completedSale);
       setCheckoutOpen(false);
       cart.clear();
+      playSaleSound();
 
       if (autoPrint && saleId) {
-        toast.promise(sPrint({ data: { saleId } }), {
-          loading: "Imprimiendo ticket...",
-          success: "Ticket impreso",
-          error: (e) => `Error al imprimir: ${e.message}`,
+        openTicketWindow({
+          folio,
+          createdAt: new Date().toISOString(),
+          subtotal: totals.subtotal,
+          tax: totals.tax,
+          total: totals.total,
+          paymentMethod: method,
+          cashReceived: received,
+          changeAmount: change,
+          items: cart.items.map(i => ({
+            name: i.product.name,
+            quantity: i.quantity,
+            unitPrice: i.unitPrice,
+            modifiers: i.modifiers.filter(m => m.optionLabel).map(m => m.optionLabel),
+          })),
         });
       }
     } catch (e: any) {
@@ -170,7 +294,8 @@ function POSPage() {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
             <Input
-              placeholder="Buscar producto..."
+              ref={searchRef}
+              placeholder="Buscar producto... (/)"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               className="pl-10 h-12 bg-surface border-border text-base"
@@ -204,9 +329,13 @@ function POSPage() {
             <button
               key={p.id}
               onClick={() => onProductClick(p)}
-              className="group relative bg-card rounded-2xl p-4 text-left gold-border hover:border-gold transition-all hover:-translate-y-0.5 hover:shadow-(--shadow-gold) active:scale-[0.98]"
+              className="group relative bg-card rounded-2xl p-3 text-left gold-border hover:border-gold transition-all hover:-translate-y-0.5 hover:shadow-(--shadow-gold) active:scale-[0.98]"
             >
-              <div className="text-4xl mb-2">{p.emoji || "📦"}</div>
+              {p.image_url ? (
+                <img src={p.image_url} alt={p.name} className="w-full h-24 object-cover rounded-xl mb-2" loading="lazy" />
+              ) : (
+                <div className="text-4xl mb-2">{p.emoji || "📦"}</div>
+              )}
               <div className="font-semibold text-sm leading-tight line-clamp-2 min-h-[2.5rem]">{p.name}</div>
               <div className="mt-2 flex items-center justify-between">
                 <span className="text-lg font-bold gold-text">{fmt(p.price)}</span>
@@ -347,6 +476,56 @@ function POSPage() {
         total={totals.total}
         onConfirm={handleConfirm}
       />
+      {pendingDigitalSale && (
+        <PaymentQRDialog
+          saleId={pendingDigitalSale.saleId}
+          amount={pendingDigitalSale.total}
+          description={`Venta #${pendingDigitalSale.folio}`}
+          open={qrDialogOpen}
+          onOpenChange={(o) => { if (!o) setPendingDigitalSale(null); setQrDialogOpen(o); }}
+          onPaid={async () => {
+            try {
+              const result = await sSale({ data: pendingDigitalSale });
+              const saleId = result.saleId;
+              const completedSale = {
+                id: saleId,
+                folio: pendingDigitalSale.folio,
+                createdAt: new Date().toISOString(),
+                cashier: "Cajero",
+                items: cart.items,
+                subtotal: totals.subtotal,
+                tax: totals.tax,
+                total: totals.total,
+                payment: "digital" as PaymentMethod,
+                isBuffered: false,
+              };
+              addSale(completedSale);
+              setLastSale(completedSale);
+              cart.clear();
+              playSaleSound();
+              setPendingDigitalSale(null);
+              if (result.autoPrint) {
+                openTicketWindow({
+                  folio: pendingDigitalSale.folio,
+                  createdAt: new Date().toISOString(),
+                  subtotal: totals.subtotal,
+                  tax: totals.tax,
+                  total: totals.total,
+                  paymentMethod: "digital",
+                  items: cart.items.map(i => ({
+                    name: i.product.name,
+                    quantity: i.quantity,
+                    unitPrice: i.unitPrice,
+                    modifiers: i.modifiers.filter(m => m.optionLabel).map(m => m.optionLabel),
+                  })),
+                });
+              }
+            } catch (e: any) {
+              toast.error(`Error al confirmar pago: ${e.message}`);
+            }
+          }}
+        />
+      )}
       <ReceiptDialog
         sale={lastSale}
         open={!!lastSale}

@@ -145,3 +145,335 @@
 @utility gold-border {
   border: 1px solid color-mix(in oklab, var(--gold) 35%, transparent);
 }
+
+/* ═══════════════════════════════════════════
+   TICKET PRINTING STYLES
+   ═══════════════════════════════════════════ */
+
+/* Ticket page layout */
+.ticket-wrapper {
+  width: 100%;
+  max-width: 302px; /* ~80mm at 96dpi */
+}
+
+.ticket {
+  width: 100%;
+  padding: 0.3rem 0.75rem 1rem 0.75rem;
+  font-family: "Courier New", "Liberation Mono", "DejaVu Sans Mono", monospace;
+  font-size: 0.6875rem; /* 11px */
+  line-height: 1.35;
+  color: #111;
+  background: #fff;
+  border-radius: 0.5rem;
+}
+
+.ticket-header {
+  text-align: center;
+  margin-bottom: 0.1rem;
+}
+
+.ticket-logo {
+  display: block;
+  width: 2.75rem;
+  height: 2.75rem;
+  object-fit: contain;
+  margin: 0 auto;
+}
+
+.ticket-business {
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 0.9375rem;
+  font-weight: 800;
+  color: #1a1a1a;
+  margin: 0;
+  line-height: 1.15;
+}
+
+.ticket-slogan {
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 0.6rem;
+  font-style: italic;
+  color: #555;
+  margin: 0.0625rem 0 0;
+}
+
+.ticket-address {
+  font-size: 0.5625rem;
+  color: #555;
+  margin: 0.0625rem 0 0;
+}
+
+.ticket-phone {
+  font-size: 0.5625rem;
+  color: #555;
+  margin: 0;
+}
+
+.ticket-divider {
+  border-top: 1px dashed #999;
+  margin: 0.35rem 0;
+}
+
+.ticket-info {
+  font-size: 0.65rem;
+  line-height: 1.45;
+}
+
+.ticket-items {
+  font-size: 0.65rem;
+}
+
+.ticket-totals {
+  font-size: 0.65rem;
+  line-height: 1.45;
+}
+
+.ticket-footer {
+  text-align: center;
+  margin-top: 0.125rem;
+  font-size: 0.6rem;
+}
+
+/* Feed extra — blank space so paper advances past cutter */
+.ticket-feed {
+  height: 18mm;
+}
+
+/* ── Print Media ── */
+@media print {
+  @page {
+    size: 80mm auto;
+    margin: 0;
+  }
+
+  html, body {
+    background: white !important;
+    margin: 0;
+    padding: 0;
+    width: 80mm;
+  }
+
+  .ticket-wrapper {
+    max-width: 80mm;
+  }
+
+  .ticket {
+    box-shadow: none !important;
+    border-radius: 0;
+    padding: 0.5mm 2mm 3mm 2mm;
+    width: 80mm;
+    font-size: 2.2mm;
+  }
+
+  .ticket-logo {
+    display: block;
+    width: 9mm;
+    height: 9mm;
+    margin: 0 auto;
+  }
+
+  .ticket-business {
+    font-size: 3mm;
+    color: #000;
+  }
+
+  .ticket-slogan {
+    font-size: 1.8mm;
+    color: #333;
+  }
+
+  .ticket-address,
+  .ticket-phone {
+    font-size: 1.7mm;
+  }
+
+  .ticket-divider {
+    margin: 1mm 0;
+  }
+
+  .ticket-info,
+  .ticket-items,
+  .ticket-totals,
+  .ticket-footer {
+    font-size: 2mm;
+  }
+
+  .ticket-feed {
+    height: 20mm;
+  }
+
+  /* Hide all non-ticket UI */
+  .no-print,
+  nav,
+  header:not(.ticket-header),
+  footer:not(.ticket-footer),
+  .sidebar,
+  button,
+  [role="dialog"],
+  [data-sonner-toaster],
+  .bg-gray-100 {
+    display: none !important;
+  }
+
+  /* Ensure ticket backgrounds stay white */
+  * {
+    background: white !important;
+    color: black !important;
+  }
+
+  .ticket,
+  .ticket * {
+    background: white !important;
+  }
+
+  .ticket-divider {
+    border-color: #666 !important;
+  }
+}
+
+/* Utility for hiding elements during print */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}
+
+/* ═══════════════════════════════════════════
+   CASH CUT PRINT STYLES
+   ═══════════════════════════════════════════ */
+
+.corte-wrapper {
+  width: 100%;
+  max-width: 302px;
+}
+
+.corte {
+  width: 100%;
+  padding: 1rem 0.75rem;
+  font-family: "Courier New", "Liberation Mono", "DejaVu Sans Mono", monospace;
+  font-size: 0.6875rem;
+  line-height: 1.35;
+  color: #111;
+  background: #fff;
+  border-radius: 0.5rem;
+}
+
+.corte-header {
+  text-align: center;
+  margin-bottom: 0.25rem;
+}
+
+.corte-logo {
+  width: 3rem;
+  height: 3rem;
+  object-fit: contain;
+  margin: 0 auto 0.125rem;
+}
+
+.corte-title {
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 0.9375rem;
+  font-weight: 800;
+  color: #1a1a1a;
+  margin: 0;
+  line-height: 1.15;
+}
+
+.corte-subtitle {
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 0.6rem;
+  font-style: italic;
+  color: #555;
+  margin: 0.0625rem 0 0;
+}
+
+.corte-address {
+  font-size: 0.5625rem;
+  color: #555;
+  margin: 0.0625rem 0 0;
+}
+
+.corte-section-title {
+  text-align: center;
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #b8860b;
+  margin: 0.25rem 0;
+  letter-spacing: 0.05em;
+}
+
+.corte-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #b8860b;
+  margin: 0.25rem 0 0.125rem;
+}
+
+.corte-divider {
+  border-top: 1px dashed #999;
+  margin: 0.35rem 0;
+}
+
+.corte-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.65rem;
+  line-height: 1.45;
+}
+
+.corte-footer {
+  text-align: center;
+  margin-top: 0.125rem;
+  font-size: 0.6rem;
+}
+
+.corte-feed {
+  height: 18mm;
+}
+
+@media print {
+  .corte-wrapper {
+    max-width: 80mm;
+  }
+
+  .corte {
+    box-shadow: none !important;
+    border-radius: 0;
+    padding: 1.5mm 2mm;
+    width: 80mm;
+    font-size: 2.2mm;
+  }
+
+  .corte-logo {
+    width: 10mm;
+    height: 10mm;
+  }
+
+  .corte-title {
+    font-size: 3mm;
+    color: #000;
+  }
+
+  .corte-subtitle {
+    font-size: 1.8mm;
+  }
+
+  .corte-section-title {
+    font-size: 2.8mm;
+  }
+
+  .corte-label {
+    font-size: 1.8mm;
+  }
+
+  .corte-row {
+    font-size: 2mm;
+  }
+
+  .corte-feed {
+    height: 20mm;
+  }
+}

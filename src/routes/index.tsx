@@ -1,8 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ChevronDown, Flame, MapPin, Clock, Phone, Sparkles, ShoppingBag, Instagram, Facebook, Plus } from "lucide-react";
+import { ChevronDown, Flame, MapPin, Clock, Phone, Sparkles, ShoppingBag, Instagram, Facebook, Plus, ArrowUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
@@ -66,6 +66,14 @@ function LandingPage() {
   const waNumber = settings?.whatsapp_number ?? null;
 
   const cart = useWhatsAppCart();
+
+  // Back to top visibility
+  const [showBackTop, setShowBackTop] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setShowBackTop(window.scrollY > 600);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   const [base, setBase] = useState<string | null>(null);
   const [format, setFormat] = useState<string | null>(null);
@@ -147,7 +155,7 @@ function LandingPage() {
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10">Elotes humeantes, lokos imposibles y uchepos como los de la abuela.<br />Ven, arma el tuyo y llévate el antojo.</p>
           <div className="flex flex-wrap items-center justify-center gap-3">
             <Button size="lg" asChild className="h-14 px-8 text-base bg-gradient-to-r from-[oklch(0.78_0.13_82)] to-[oklch(0.72_0.14_75)] text-primary-foreground shadow-[var(--shadow-gold)] hover-scale">
-              <a href="#builder">Ver el menú (bajo tu propio antojo)</a>
+              <a href="#builder">Arma tu antojo</a>
             </Button>
             <Button size="lg" variant="outline" asChild className="h-14 px-8 text-base gold-border">
               <a href="#visita"><MapPin className="size-4" /> Cómo llegar</a>
@@ -351,14 +359,25 @@ function LandingPage() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <a href="#" aria-label="Instagram" className="p-2 rounded-full border border-border hover:border-gold/40 transition"><Instagram className="size-4" /></a>
-            <a href="#" aria-label="Facebook" className="p-2 rounded-full border border-border hover:border-gold/40 transition"><Facebook className="size-4" /></a>
+            <a href="https://instagram.com/esquiteslaparroquia" target="_blank" rel="noopener" aria-label="Instagram" className="p-2 rounded-full border border-border hover:border-gold/40 transition"><Instagram className="size-4" /></a>
+            <a href="https://facebook.com/esquiteslaparroquia" target="_blank" rel="noopener" aria-label="Facebook" className="p-2 rounded-full border border-border hover:border-gold/40 transition"><Facebook className="size-4" /></a>
             <Link to="/auth" className="text-xs text-muted-foreground hover:text-gold transition ml-3">Acceso staff</Link>
           </div>
         </div>
       </footer>
 
       <WhatsAppCartButton cart={cart} whatsappNumber={waNumber} businessName={settings?.business_name ?? "Esquites La Parroquia"} />
+
+      {/* Back to top */}
+      {showBackTop && (
+        <button
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          className="fixed bottom-24 right-5 z-30 size-10 rounded-full bg-card border border-border shadow-lg flex items-center justify-center text-muted-foreground hover:text-gold hover:border-gold/40 transition-all animate-fade-in"
+          aria-label="Volver arriba"
+        >
+          <ArrowUp className="size-5" />
+        </button>
+      )}
     </div>
   );
 }

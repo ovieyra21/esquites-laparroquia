@@ -153,6 +153,51 @@ export const saveSale = createServerFn({ method: "POST" })
     };
   });
 
+const getSaleInput = z.object({ saleId: z.string() });
+
+export const getSaleForTicket = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: any) => getSaleInput.parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { data: sale, error } = await supabase
+      .from("sales")
+      .select("*, sale_items(*, sale_item_modifiers(*))")
+      .eq("id", data.saleId)
+      .single();
+    if (error || !sale) throw new Error("Venta no encontrada.");
+
+    const { data: profile } = sale.user_id
+      ? await supabase.from("profiles").select("full_name").eq("id", sale.user_id).maybeSingle()
+      : { data: null as { full_name: string | null } | null };
+
+    const { data: settings } = await supabase.from("settings").select("business_name, slogan, address, phone, footer_message").limit(1).maybeSingle();
+
+    return {
+      id: sale.id,
+      folio: sale.folio,
+      createdAt: sale.created_at,
+      cashier: profile?.full_name ?? "Cajero",
+      subtotal: Number(sale.subtotal),
+      tax: Number(sale.tax ?? 0),
+      total: Number(sale.total),
+      paymentMethod: sale.payment_method ?? "efectivo",
+      cashReceived: sale.cash_received != null ? Number(sale.cash_received) : null,
+      changeAmount: sale.change_amount != null ? Number(sale.change_amount) : null,
+      items: (sale.sale_items ?? []).map((i: any) => ({
+        name: i.product_name ?? "Producto",
+        quantity: i.quantity,
+        unitPrice: Number(i.unit_price),
+        modifiers: (i.sale_item_modifiers ?? []).map((m: any) => m.modifier_name).filter(Boolean),
+      })),
+      businessName: settings?.business_name ?? "Esquites La Parroquia",
+      slogan: settings?.slogan ?? "El sabor que nos une",
+      address: settings?.address ?? "Acámbaro, Gto.",
+      phone: settings?.phone ?? "",
+      footerMessage: settings?.footer_message ?? "¡Gracias por su compra!",
+    };
+  });
+
 export const updateKdsStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: any) => z.object({ saleId: z.string().uuid(), status: z.string() }).parse(input))

@@ -48,7 +48,7 @@ async function buildTicketBuffer(opts: {
   const logoRaster = Array.from(getLogoRaster(widthMm));
 
   let e = encoder.initialize().align("center").raw(logoRaster).newline()
-    .codepage("cp437")
+    .codepage("cp850")
     .bold(true).size(2, 2).line(opts.settings.business_name ?? "Esquites La Parroquia").bold(false).size(1, 1);
   if (opts.settings.slogan) e = e.line(opts.settings.slogan);
   if (opts.settings.address) e = e.line(opts.settings.address);
@@ -94,7 +94,7 @@ async function buildCashCutBuffer(opts: {
   const openedAt = new Date(reg.opened_at).toLocaleString("es-MX", { dateStyle: "short", timeStyle: "medium" });
   const closedAt = reg.closed_at ? new Date(reg.closed_at).toLocaleString("es-MX", { dateStyle: "short", timeStyle: "medium" }) : "Abierta";
 
-  let e = encoder.initialize().codepage("cp437").align("center");
+  let e = encoder.initialize().codepage("cp850").align("center");
 
   if (opts.settings.show_logo && opts.settings.logo_data) {
     try {
@@ -229,9 +229,8 @@ export const printSaleTicket = createServerFn({ method: "POST" })
   .inputValidator((input: any) => printInput.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const [{ data: settings }, { data: sale }] = await Promise.all([
-      supabaseAdmin.from("settings").select("*").limit(1).maybeSingle(),
+      supabase.from("settings").select("*").limit(1).maybeSingle(),
       supabase.from("sales").select("*, sale_items(*, sale_item_modifiers(*))").eq("id", data.saleId).single(),
     ]);
     if (!settings) throw new Error("Configuración no encontrada.");
@@ -270,9 +269,8 @@ export const testPrinter = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: any) => testInput.parse(input || {}))
   .handler(async ({ context }) => {
-    const { supabase: _ } = context;
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: settings } = await supabaseAdmin.from("settings").select("*").limit(1).maybeSingle();
+    const { supabase } = context;
+    const { data: settings } = await supabase.from("settings").select("*").limit(1).maybeSingle();
     if (!settings?.printer_ip) throw new Error("Configura la IP de la impresora primero.");
 
     const buffer = await buildTicketBuffer({
