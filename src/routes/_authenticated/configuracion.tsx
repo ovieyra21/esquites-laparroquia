@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import type { ChangeEvent } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Save, Printer, Building2, Loader2, TestTube2, Monitor, Image as ImageIcon, X } from "lucide-react";
+import { Save, Printer, Building2, Loader2, TestTube2, Monitor, Image as ImageIcon, X, CreditCard } from "lucide-react";
 import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -40,6 +40,9 @@ type Settings = {
   logo_url: string | null;
   logo_data: string | null;
   show_logo: boolean | null;
+  payment_provider: string | null;
+  mp_device_id: string | null;
+  zettle_api_key: string | null;
 };
 
 const defaults: Settings = {
@@ -61,6 +64,9 @@ const defaults: Settings = {
   logo_url: "",
   logo_data: "",
   show_logo: true,
+  payment_provider: "none",
+  mp_device_id: "",
+  zettle_api_key: "",
 };
 
 function ConfigPage() {
@@ -111,6 +117,9 @@ function ConfigPage() {
           logo_url: s.logo_url ?? undefined,
           logo_data: s.logo_data ?? undefined,
           show_logo: !!s.show_logo,
+          payment_provider: s.payment_provider ?? undefined,
+          mp_device_id: s.mp_device_id ?? undefined,
+          zettle_api_key: s.zettle_api_key ?? undefined,
         },
       });
       toast.success("Configuración guardada");
@@ -180,6 +189,7 @@ function ConfigPage() {
         <TabsList>
           <TabsTrigger value="business"><Building2 className="size-4 mr-2" /> Negocio</TabsTrigger>
           <TabsTrigger value="printer"><Printer className="size-4 mr-2" /> Impresora</TabsTrigger>
+          <TabsTrigger value="payments"><CreditCard className="size-4 mr-2" /> Pagos</TabsTrigger>
         </TabsList>
 
         <TabsContent value="business">
@@ -234,6 +244,88 @@ function ConfigPage() {
                 {testing ? <Loader2 className="size-4 animate-spin" /> : <TestTube2 className="size-4" />} Probar impresora térmica
               </Button>
             </div>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="payments">
+          <Card className="p-6 space-y-4">
+            <div>
+              <Label className="text-base">Proveedor de pagos</Label>
+              <p className="text-xs text-muted-foreground">
+                Selecciona cómo cobrarás con tarjeta. Requiere configurar las credenciales en las variables de entorno (.env).
+              </p>
+            </div>
+
+            <div>
+              <Label>Proveedor</Label>
+              <Select value={s.payment_provider ?? "none"} onValueChange={(v) => set("payment_provider", v)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sin terminal" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">🛑 Sin terminal (solo efectivo)</SelectItem>
+                  <SelectItem value="mercadopago_point">🟦 Mercado Pago Point (terminal)</SelectItem>
+                  <SelectItem value="mercadopago_qr">📱 Mercado Pago QR (código en pantalla)</SelectItem>
+                  <SelectItem value="zettle">🟨 PayPal Zettle (terminal)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {(s.payment_provider === "mercadopago_point" || s.payment_provider === "mercadopago_qr") && (
+              <div className="rounded-lg border border-blue-500/20 bg-blue-500/5 p-4 space-y-3">
+                <p className="text-xs font-semibold text-blue-400 uppercase tracking-wider">Mercado Pago</p>
+                <div>
+                  <Label>ID del dispositivo Point</Label>
+                  <Input
+                    value={s.mp_device_id ?? ""}
+                    onChange={(e) => set("mp_device_id", e.target.value)}
+                    placeholder="Ej. POINT-123456789"
+                  />
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    Encuéntralo en la app de Mercado Pago → Dispositivos Point → ID del dispositivo.
+                    También necesitas <code>MERCADOPAGO_ACCESS_TOKEN</code> en tu archivo <code>.env</code>.
+                  </p>
+                </div>
+                <div className="text-[10px] text-muted-foreground bg-blue-500/10 rounded-lg p-2">
+                  💡 <strong>¿Cómo funciona?</strong> Al cobrar con tarjeta, el sistema envía el monto a la terminal Point.
+                  La terminal muestra el importe, el cliente acerca su tarjeta/NFC, y se confirma automáticamente en pantalla.
+                </div>
+              </div>
+            )}
+
+            {s.payment_provider === "zettle" && (
+              <div className="rounded-lg border border-yellow-500/20 bg-yellow-500/5 p-4 space-y-3">
+                <p className="text-xs font-semibold text-yellow-400 uppercase tracking-wider">PayPal Zettle</p>
+                <div>
+                  <Label>API Key de Zettle</Label>
+                  <Input
+                    value={s.zettle_api_key ?? ""}
+                    type="password"
+                    onChange={(e) => set("zettle_api_key", e.target.value)}
+                    placeholder="API Key de PayPal Zettle"
+                  />
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    Obtén tu API Key en: <a href="https://my.zettle.com/apps" target="_blank" className="text-gold underline">my.zettle.com/apps</a>.
+                    También necesitas <code>ZETTLE_API_KEY</code> y <code>ZETTLE_CLIENT_ID</code> en tu archivo <code>.env</code>.
+                  </p>
+                </div>
+                <div className="text-[10px] text-muted-foreground bg-yellow-500/10 rounded-lg p-2">
+                  💡 <strong>¿Cómo funciona?</strong> Similar a Point: el sistema crea un cobro, la terminal Zettle muestra el monto,
+                  el cliente paga con tarjeta o NFC, y se confirma automáticamente.
+                </div>
+              </div>
+            )}
+
+            {s.payment_provider === "mercadopago_qr" && (
+              <div className="rounded-lg border border-green-500/20 bg-green-500/5 p-4 space-y-3">
+                <p className="text-xs font-semibold text-green-400 uppercase tracking-wider">QR en pantalla</p>
+                <div className="text-[10px] text-muted-foreground bg-green-500/10 rounded-lg p-2">
+                  💡 Al seleccionar "Pago digital" en el checkout, se genera un código QR que el cliente escanea con
+                  cualquier app bancaria (BBVA, Santander, Mercado Pago, etc.). El sistema confirma el pago automáticamente.
+                  No requiere terminal físico.
+                </div>
+              </div>
+            )}
           </Card>
         </TabsContent>
       </Tabs>

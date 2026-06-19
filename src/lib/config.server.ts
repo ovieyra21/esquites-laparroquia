@@ -21,5 +21,7 @@ export function getServerConfig() {
     nodeEnv: process.env.NODE_ENV,
     mercadopagoAccessToken: process.env.MERCADOPAGO_ACCESS_TOKEN,
     mercadopagoWebhookSecret: process.env.MERCADOPAGO_WEBHOOK_SECRET,
+    zettleApiKey: process.env.ZETTLE_API_KEY,
+    zettleClientId: process.env.ZETTLE_CLIENT_ID,
   };
 }

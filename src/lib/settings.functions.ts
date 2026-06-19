@@ -28,11 +28,14 @@ const updateInput = z.object({
   logo_url: z.string().optional().nullable(),
   logo_data: z.string().optional().nullable(),
   show_logo: z.boolean().optional(),
+  payment_provider: z.enum(["mercadopago_point", "mercadopago_qr", "zettle", "none"]).optional(),
+  mp_device_id: z.string().optional().nullable(),
+  zettle_api_key: z.string().optional().nullable(),
 });
 
 export const updateSettings = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: any) => updateInput.parse(input))
+  .validator((input: any) => updateInput.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: userId, _role: "admin" });

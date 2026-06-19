@@ -12,8 +12,10 @@ import { useSales, nextFolio, type PaymentMethod } from "@/store/sales";
 import { ProductModifierDialog } from "@/components/ProductModifierDialog";
 import { CheckoutDialog } from "@/components/CheckoutDialog";
 import { PaymentQRDialog } from "@/components/PaymentQRDialog";
+import { PaymentTerminalDialog } from "@/components/PaymentTerminalDialog";
 import { ReceiptDialog } from "@/components/ReceiptDialog";
 import { saveSale } from "@/lib/sales.functions";
+import { getSettings } from "@/lib/settings.functions";
 import { crmApi } from "@/lib/crm.functions";
 import { buildTicketHash } from "@/lib/utils";
 import { toast } from "sonner";
@@ -41,6 +43,8 @@ function POSPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [qrDialogOpen, setQrDialogOpen] = useState(false);
   const [pendingDigitalSale, setPendingDigitalSale] = useState<any>(null);
+  const [terminalOpen, setTerminalOpen] = useState(false);
+  const [pendingTerminalSale, setPendingTerminalSale] = useState<any>(null);
 
   const cart = useCart();
   const addSale = useSales((s) => s.addSale);
@@ -50,6 +54,16 @@ function POSPage() {
     queryKey: ["customers"],
     queryFn: () => crmApi.getCustomers()
   });
+
+  const getSettingsFn = useServerFn(getSettings);
+  const { data: settings } = useQuery({
+    queryKey: ["settings"],
+    queryFn: () => getSettingsFn(),
+  });
+
+  const paymentProvider = (settings as any)?.payment_provider || "none";
+  const mpDeviceId = (settings as any)?.mp_device_id || "";
+  const hasTerminal = (paymentProvider === "mercadopago_point" || paymentProvider === "zettle") && !!mpDeviceId;
 
   const [customerSearch, setCustomerSearch] = useState("");
   const selectedCustomer = customers.find((c: any) => c.id === cart.customerId);
@@ -166,7 +180,35 @@ function POSPage() {
   };
 
   const handleConfirm = async (method: PaymentMethod, received?: number, change?: number) => {
-    // Digital payment: open QR dialog, save after payment confirmed
+    // Terminal payment: open terminal dialog, save after payment confirmed
+    if ((method === "tarjeta" || method === "digital") && hasTerminal) {
+      const folio = nextFolio();
+      const saleData = {
+        folio,
+        subtotal: totals.subtotal,
+        tax: totals.tax,
+        total: totals.total,
+        paymentMethod: "tarjeta" as PaymentMethod,
+        customerId: cart.customerId || undefined,
+        items: cart.items.map(i => ({
+          productId: i.product.id,
+          productName: i.product.name,
+          quantity: i.quantity,
+          unitPrice: i.unitPrice,
+          modifiers: i.modifiers.map(m => ({
+            modifierName: m.optionLabel,
+            extraPrice: m.extraPrice
+          }))
+        }))
+      };
+      const tempId = crypto.randomUUID();
+      setPendingTerminalSale({ ...saleData, saleId: tempId, folio });
+      setCheckoutOpen(false);
+      setTerminalOpen(true);
+      return;
+    }
+
+    // Digital payment (QR) without terminal: open QR dialog
     if (method === "digital") {
       const folio = nextFolio();
       const saleData = {
@@ -522,6 +564,58 @@ function POSPage() {
               }
             } catch (e: any) {
               toast.error(`Error al confirmar pago: ${e.message}`);
+            }
+          }}
+        />
+      )}
+      {pendingTerminalSale && (
+        <PaymentTerminalDialog
+          saleId={pendingTerminalSale.saleId}
+          amount={pendingTerminalSale.total}
+          description={`Venta #${pendingTerminalSale.folio}`}
+          provider={paymentProvider as "mercadopago_point" | "zettle"}
+          deviceId={mpDeviceId}
+          open={terminalOpen}
+          onOpenChange={(o) => { if (!o) setPendingTerminalSale(null); setTerminalOpen(o); }}
+          onPaid={async () => {
+            try {
+              const result = await sSale({ data: pendingTerminalSale });
+              const saleId = result.saleId;
+              const completedSale = {
+                id: saleId,
+                folio: pendingTerminalSale.folio,
+                createdAt: new Date().toISOString(),
+                cashier: "Cajero",
+                items: cart.items,
+                subtotal: totals.subtotal,
+                tax: totals.tax,
+                total: totals.total,
+                payment: "tarjeta" as PaymentMethod,
+                isBuffered: false,
+              };
+              addSale(completedSale);
+              setLastSale(completedSale);
+              cart.clear();
+              playSaleSound();
+              setPendingTerminalSale(null);
+              if (result.autoPrint) {
+                openTicketWindow({
+                  folio: pendingTerminalSale.folio,
+                  createdAt: new Date().toISOString(),
+                  subtotal: totals.subtotal,
+                  tax: totals.tax,
+                  total: totals.total,
+                  paymentMethod: "tarjeta",
+                  items: cart.items.map(i => ({
+                    name: i.product.name,
+                    quantity: i.quantity,
+                    unitPrice: i.unitPrice,
+                    modifiers: i.modifiers.filter(m => m.optionLabel).map(m => m.optionLabel),
+                  })),
+                });
+              }
+            } catch (e: any) {
+              toast.error(`Error al guardar venta: ${e.message}`);
             }
           }}
         />
