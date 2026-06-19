@@ -17,7 +17,7 @@ import { ReceiptDialog } from "@/components/ReceiptDialog";
 import { saveSale } from "@/lib/sales.functions";
 import { getSettings } from "@/lib/settings.functions";
 import { crmApi } from "@/lib/crm.functions";
-import { buildTicketHash } from "@/lib/utils";
+import { buildTicketHash, printTicketBrowser } from "@/lib/utils";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/pos")({
@@ -174,11 +174,6 @@ function POSPage() {
 
   const sSale = useServerFn(saveSale);
 
-  const openTicketWindow = (saleData: { folio: string; createdAt: string; subtotal: number; tax: number; total: number; paymentMethod: string; cashReceived?: number; changeAmount?: number; items: { name: string; quantity: number; unitPrice: number; modifiers: string[] }[] }) => {
-    const hash = buildTicketHash({ ...saleData, cashier: "Cajero" });
-    window.open(`/ticket/print#${hash}`, "_blank", "width=380,height=600");
-  };
-
   const handleConfirm = async (method: PaymentMethod, received?: number, change?: number) => {
     // Terminal payment: open terminal dialog, save after payment confirmed
     if ((method === "tarjeta" || method === "digital") && hasTerminal) {
@@ -299,7 +294,8 @@ function POSPage() {
       playSaleSound();
 
       if (autoPrint && saleId) {
-        openTicketWindow({
+        printTicketBrowser({
+          cashier: "Cajero",
           folio,
           createdAt: new Date().toISOString(),
           subtotal: totals.subtotal,
@@ -547,7 +543,8 @@ function POSPage() {
               playSaleSound();
               setPendingDigitalSale(null);
               if (result.autoPrint) {
-                openTicketWindow({
+                printTicketBrowser({
+                  cashier: "Cajero",
                   folio: pendingDigitalSale.folio,
                   createdAt: new Date().toISOString(),
                   subtotal: totals.subtotal,
@@ -599,7 +596,8 @@ function POSPage() {
               playSaleSound();
               setPendingTerminalSale(null);
               if (result.autoPrint) {
-                openTicketWindow({
+                printTicketBrowser({
+                  cashier: "Cajero",
                   folio: pendingTerminalSale.folio,
                   createdAt: new Date().toISOString(),
                   subtotal: totals.subtotal,

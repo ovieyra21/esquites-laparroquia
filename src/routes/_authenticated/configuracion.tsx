@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getSettings, updateSettings } from "@/lib/settings.functions";
 import { testPrinter } from "@/lib/printer.functions";
-import { buildTicketHash } from "@/lib/utils";
+import { printTicketBrowser } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/configuracion")({
   ssr: false,
@@ -143,10 +143,10 @@ function ConfigPage() {
   };
 
   const onBrowserTest = () => {
-    const hash = buildTicketHash({
+    printTicketBrowser({
+      cashier: "Sistema",
       folio: "PRUEBA",
       createdAt: new Date().toISOString(),
-      cashier: "Sistema",
       subtotal: 0,
       tax: 0,
       total: 0,
@@ -157,8 +157,7 @@ function ConfigPage() {
         { name: "Ticket de prueba", quantity: 1, unitPrice: 0, modifiers: ["Impresión correcta ✓"] },
       ],
     });
-    window.open(`/ticket/print#${hash}`, "_blank", "width=380,height=600");
-    toast.success("Abriendo ticket de prueba para imprimir...");
+    toast.success("Abriendo ticket de prueba...");
   };
 
   const onLogoUpload = (e: ChangeEvent<HTMLInputElement>) => {

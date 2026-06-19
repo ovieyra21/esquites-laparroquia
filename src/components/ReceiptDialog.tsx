@@ -7,7 +7,7 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useServerFn } from "@tanstack/react-start";
 import { printSaleTicket } from "@/lib/printer.functions";
-import { buildTicketHash } from "@/lib/utils";
+import { buildTicketHash, printTicketBrowser } from "@/lib/utils";
 import { toast } from "sonner";
 import { useState, useCallback } from "react";
 import logoTicket from "@/assets/logo-ticket.png";
@@ -28,7 +28,7 @@ export function ReceiptDialog({
 
   const handleBrowserPrint = useCallback(() => {
     if (!sale) return;
-    const hash = buildTicketHash({
+    printTicketBrowser({
       folio: sale.folio,
       createdAt: sale.createdAt,
       cashier: sale.cashier,
@@ -45,7 +45,6 @@ export function ReceiptDialog({
         modifiers: i.modifiers.filter((m) => m.optionLabel).map((m) => m.optionLabel),
       })),
     });
-    window.open(`/ticket/print#${hash}`, "_blank", "width=380,height=600");
   }, [sale]);
 
   const handleThermalPrint = async () => {

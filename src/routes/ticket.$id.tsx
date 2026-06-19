@@ -34,7 +34,12 @@ function parseHashData(): TicketData | null {
   try {
     const raw = window.location.hash.slice(1);
     if (!raw) return null;
-    return JSON.parse(decodeURIComponent(atob(raw)));
+    // decode base64 → bytes → UTF-8
+    const binary = atob(raw);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    const json = new TextDecoder().decode(bytes);
+    return JSON.parse(json);
   } catch {
     return null;
   }
