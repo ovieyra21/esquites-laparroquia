@@ -226,7 +226,6 @@ async function sendToPrinter(ip: string, port: number, data: Uint8Array): Promis
 
 export const printSaleTicket = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: any) => printInput.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const [{ data: settings }, { data: sale }] = await Promise.all([
@@ -267,7 +266,6 @@ export const printSaleTicket = createServerFn({ method: "POST" })
 
 export const testPrinter = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: any) => testInput.parse(input || {}))
   .handler(async ({ context }) => {
     const { supabase } = context;
     const { data: settings } = await supabase.from("settings").select("*").limit(1).maybeSingle();
@@ -287,7 +285,6 @@ export const testPrinter = createServerFn({ method: "POST" })
 
 export const printCashCutReceipt = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: any) => printCashCutInput.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const [{ data: settings }, { data: register }] = await Promise.all([

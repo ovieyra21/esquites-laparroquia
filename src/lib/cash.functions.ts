@@ -20,7 +20,6 @@ const moveInput = z.object({
 
 export const openCashRegister = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => openInput.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const { data: existing } = await supabase
@@ -46,7 +45,6 @@ export const openCashRegister = createServerFn({ method: "POST" })
 
 export const closeCashRegister = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => closeInput.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const { data: reg } = await supabase
@@ -82,7 +80,6 @@ export const closeCashRegister = createServerFn({ method: "POST" })
 
 export const addCashMovement = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => moveInput.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const { data: reg } = await supabase
@@ -162,7 +159,6 @@ export type CashCutDetail = {
 
 export const getCashCutDetail = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: any) => cutDetailInput.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
 

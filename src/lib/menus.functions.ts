@@ -31,7 +31,6 @@ const uploadInput = z.object({
 
 export const uploadMenu = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => uploadInput.parse(input))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -56,7 +55,6 @@ export const uploadMenu = createServerFn({ method: "POST" })
 
 export const setActiveMenu = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -68,7 +66,6 @@ export const setActiveMenu = createServerFn({ method: "POST" })
 
 export const deleteMenu = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -83,7 +80,6 @@ export const deleteMenu = createServerFn({ method: "POST" })
 
 export const getMenuSignedUrl = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -96,7 +92,6 @@ export const getMenuSignedUrl = createServerFn({ method: "POST" })
 
 // Public: resolve the active menu and return a signed URL (no auth required).
 export const getPublicMenuUrl = createServerFn({ method: "GET" })
-  .inputValidator((input) => z.object({ id: z.string().uuid().optional() }).parse(input))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     let menu;

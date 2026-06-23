@@ -52,7 +52,6 @@ export type ExpenseSummary = {
 
 export const createExpense = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: any) => createExpenseInput.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const { error } = await supabase.from("expenses").insert({
@@ -72,7 +71,6 @@ export const createExpense = createServerFn({ method: "POST" })
 
 export const listExpenses = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: any) => listExpensesInput.parse(input || {}))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { dateFrom, dateTo, category, page, pageSize } = data;
@@ -97,7 +95,6 @@ export const listExpenses = createServerFn({ method: "GET" })
 
 export const deleteExpense = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: any) => deleteExpenseInput.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { error } = await supabase.from("expenses").delete().eq("id", data.id);
@@ -107,10 +104,6 @@ export const deleteExpense = createServerFn({ method: "POST" })
 
 export const getExpenseSummary = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(
-    (input: any) =>
-      z.object({ dateFrom: z.string().optional(), dateTo: z.string().optional() }).parse(input || {}),
-  )
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { dateFrom, dateTo } = data;
