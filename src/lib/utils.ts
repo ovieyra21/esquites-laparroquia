@@ -77,12 +77,12 @@ export function printTicketBrowser(data: TicketPrintData) {
         background:#e0e0e0; color:#333;
       }
       #__ticket_print_overlay__ .ticket-wrap {
-        width:302px; margin-top:44px; margin-bottom:16px;
+        width:302px; max-width:100vw; margin-top:44px; margin-bottom:16px;
       }
       #__ticket_print_overlay__ .ticket {
         background:#fff; border-radius:6px; padding:6px 12px 16px 12px;
         box-shadow:0 5px 20px rgba(0,0,0,.15);
-        color:#111; font-size:11px; line-height:1.35;
+        color:#111; font-size:11px; line-height:1.35; overflow:hidden;
       }
       #__ticket_print_overlay__ .ticket-header {
         text-align:center; margin-bottom:2px;
@@ -103,7 +103,14 @@ export function printTicketBrowser(data: TicketPrintData) {
       #__ticket_print_overlay__ .ti-row { display:flex; justify-content:space-between; font-size:9px; }
       #__ticket_print_overlay__ .ti-row span:first-child { text-transform:uppercase; }
       #__ticket_print_overlay__ .ti-line {
-        display:flex; justify-content:space-between; font-weight:600; font-size:11px; margin-top:3px;
+        display:flex; justify-content:space-between; align-items:baseline;
+        font-weight:600; font-size:11px; margin-top:3px;
+      }
+      #__ticket_print_overlay__ .ti-name {
+        flex:1; min-width:0; word-break:break-word; overflow-wrap:break-word;
+      }
+      #__ticket_print_overlay__ .ti-price {
+        flex-shrink:0; margin-left:6px; white-space:nowrap;
       }
       #__ticket_print_overlay__ .ti-mod {
         font-size:9px; padding-left:12px; color:#666;
@@ -123,23 +130,36 @@ export function printTicketBrowser(data: TicketPrintData) {
       }
       #__ticket_print_overlay__ .ticket-feed { height:8mm; }
 
+      @page { size:80mm auto; margin:0 !important; }
       @media print {
+        html, body {
+          width:80mm !important; margin:0 !important; padding:0 !important;
+          background:#fff !important;
+        }
         body > * { display:none !important; }
-        body > #__ticket_print_overlay__ { display:block !important; }
+        body > #__ticket_print_overlay__ {
+          display:flex !important; justify-content:center !important;
+        }
         #__ticket_print_overlay__ {
           position:static !important; inset:auto !important;
-          padding:0 !important; background:#fff !important;
+          width:80mm !important; max-width:80mm !important;
+          padding:0 !important; margin:0 auto !important;
+          background:#fff !important; overflow:hidden !important;
         }
         #__ticket_print_overlay__ .print-bar { display:none !important; }
         #__ticket_print_overlay__ .ticket-wrap {
-          width:80mm !important; margin:0 !important;
+          width:80mm !important; max-width:80mm !important;
+          margin:0 !important; overflow:hidden !important;
         }
         #__ticket_print_overlay__ .ticket {
           box-shadow:none !important; border-radius:0 !important;
-          padding:2mm 3mm 3mm 3mm !important; font-size:2.2mm !important;
+          padding:2mm 2mm 4mm 2mm !important;
+          font-size:2.2mm !important; line-height:1.25 !important;
+          width:76mm !important; max-width:76mm !important;
+          word-wrap:break-word !important; overflow-wrap:break-word !important;
         }
         #__ticket_print_overlay__ .ticket-header img {
-          width:9mm !important; height:9mm !important;
+          width:8mm !important; height:8mm !important;
         }
         #__ticket_print_overlay__ .ticket-business { font-size:3mm !important; }
         #__ticket_print_overlay__ .ticket-slogan { font-size:2mm !important; }
@@ -149,6 +169,12 @@ export function printTicketBrowser(data: TicketPrintData) {
         #__ticket_print_overlay__ .tr-row { font-size:1.8mm !important; }
         #__ticket_print_overlay__ .ticket-total { font-size:3mm !important; }
         #__ticket_print_overlay__ .ticket-footer { font-size:1.8mm !important; }
+        #__ticket_print_overlay__ .ti-name {
+          max-width:55mm !important; word-break:break-word !important;
+        }
+        #__ticket_print_overlay__ .ti-price {
+          white-space:nowrap !important; flex-shrink:0 !important; margin-left:4px !important;
+        }
       }
     </style>
     <div class="print-bar">
