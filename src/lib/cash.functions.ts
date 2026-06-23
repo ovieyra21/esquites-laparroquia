@@ -178,10 +178,10 @@ export const getCashCutDetail = createServerFn({ method: "GET" })
     // Get sales for this register
     const { data: sales } = await supabase
       .from("sales")
-      .select("id, total, created_at, payment_method, cancelled, sale_items(product_name, quantity)")
+      .select("id, total, created_at, payment_method, sale_items(product_name, quantity)")
       .eq("cash_register_id", data.registerId);
 
-    const activeSales = (sales ?? []).filter((s: any) => !s.cancelled);
+    const activeSales = (sales ?? []).filter((s: any) => s.status !== "cancelada");
 
     // Sales by hour
     const hourlyMap: Record<number, { total: number; count: number }> = {};
