@@ -21,11 +21,14 @@ import { buildTicketHash, printTicketBrowser } from "@/lib/utils";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/pos")({
+  ssr: false,
   head: () => ({ meta: [{ title: "Punto de Venta · Esquites La Parroquia" }] }),
   component: POSPage,
 });
 
 function POSPage() {
+  const [mounted, setMounted] = useState(false);
+
   const getCats = useServerFn(listCategories);
   const getProds = useServerFn(listProducts);
 
@@ -143,6 +146,8 @@ function POSPage() {
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
   }, [query, categories, cart.items, checkoutOpen, modProduct, lastSale]);
+
+  useEffect(() => { setMounted(true); }, []);
 
   const products: Product[] = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -319,7 +324,7 @@ function POSPage() {
     }
   };
 
-  if (catsQ.isLoading || prodsQ.isLoading) {
+  if (!mounted || catsQ.isLoading || prodsQ.isLoading) {
     return <div className="flex items-center justify-center h-screen text-muted-foreground"><Loader2 className="size-6 animate-spin" /></div>;
   }
 
