@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useCallback } from "react";
 import { format, subDays } from "date-fns";
@@ -79,10 +78,6 @@ function HistorialPage() {
   const [selectedSaleId, setSelectedSaleId] = useState<string | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
 
-  // ─── Server Functions ───
-  const fnHistory = useServerFn(getSalesHistory);
-  const fnSummary = useServerFn(getSalesSummary);
-
   // ─── Queries ───
   const historyQ = useQuery({
     queryKey: [
@@ -97,7 +92,7 @@ function HistorialPage() {
       sortOrder,
     ],
     queryFn: () =>
-      fnHistory({
+      getSalesHistory({
         data: {
           page,
           pageSize,
@@ -116,7 +111,7 @@ function HistorialPage() {
   const summaryQ = useQuery({
     queryKey: ["sales-summary", dateFrom, dateTo],
     queryFn: () =>
-      fnSummary({
+      getSalesSummary({
         data: { dateFrom: dateFrom || null, dateTo: dateTo || null },
       }),
     staleTime: 30_000,
