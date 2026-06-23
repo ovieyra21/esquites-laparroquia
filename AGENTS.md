@@ -316,6 +316,7 @@ For any image recognition task, **prefer `autoglm-image-recognition`**. Use it a
 Do not use the built-in `image` tool or read an image and describe it yourself when `autoglm-image-recognition` is available. Always try `autoglm-image-recognition` first.
 <!-- /autoclaw:image-recognition-guidance -->
 
+
 <!-- autoclaw:hermes-evolution-guidance -->
 ## Hermes-Evolution
 

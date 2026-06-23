@@ -44,7 +44,7 @@ export const saveSale = createServerFn({ method: "POST" })
     const { data: sale, error: saleError } = await supabase
       .from("sales")
       .insert({
-        folio: Number(data.folio),
+        folio: data.folio,
         user_id: userId,
         cash_register_id: reg.id,
         subtotal: data.subtotal,
