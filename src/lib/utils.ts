@@ -130,20 +130,14 @@ export function printTicketBrowser(data: TicketPrintData) {
       }
       #__ticket_print_overlay__ .ticket-feed { height:8mm; }
 
-      @page { size:80mm auto; margin:0 !important; }
       @media print {
-        html, body {
-          width:80mm !important; margin:0 !important; padding:0 !important;
-          background:#fff !important;
-        }
-        body > * { display:none !important; }
-        body > #__ticket_print_overlay__ {
-          display:flex !important; justify-content:center !important;
-        }
+        /* Keep only the overlay visible */
+        html, body { width:80mm !important; margin:0 !important; padding:0 !important; background:#fff !important; }
+        body > :not(#__ticket_print_overlay__) { display:none !important; }
         #__ticket_print_overlay__ {
-          position:static !important; inset:auto !important;
+          display:block !important; position:static !important; inset:auto !important;
           width:80mm !important; max-width:80mm !important;
-          padding:0 !important; margin:0 auto !important;
+          padding:0 !important; margin:0 !important;
           background:#fff !important; overflow:hidden !important;
         }
         #__ticket_print_overlay__ .print-bar { display:none !important; }
