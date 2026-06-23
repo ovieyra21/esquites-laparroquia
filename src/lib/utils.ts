@@ -30,7 +30,26 @@ export function printTicketBrowser(data: TicketPrintData) {
   const dateStr = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()}`;
   const timeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
 
-  const itemsHtml = data.items
+  // Consolidate duplicate items (same product name + same modifiers)
+  const consolidated: { name: string; quantity: number; unitPrice: number; modifiers: string[] }[] = [];
+  for (const item of data.items) {
+    const modKey = [...item.modifiers].sort().join("|");
+    const existing = consolidated.find(
+      (c) => c.name === item.name && c.unitPrice === item.unitPrice && c.modifiers.join("|") === modKey
+    );
+    if (existing) {
+      existing.quantity += item.quantity;
+    } else {
+      consolidated.push({
+        name: item.name,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        modifiers: [...item.modifiers],
+      });
+    }
+  }
+
+  const itemsHtml = consolidated
     .map(
       (item) => `
     <div class="ti-line">
@@ -80,9 +99,9 @@ export function printTicketBrowser(data: TicketPrintData) {
         width:302px; max-width:100vw; margin-top:44px; margin-bottom:16px;
       }
       #__ticket_print_overlay__ .ticket {
-        background:#fff; border-radius:6px; padding:6px 12px 16px 12px;
+        background:#fff; border-radius:6px; padding:4px 10px 12px 10px;
         box-shadow:0 5px 20px rgba(0,0,0,.15);
-        color:#111; font-size:11px; line-height:1.35; overflow:hidden;
+        color:#111; font-size:11px; line-height:1.3; overflow:hidden;
       }
       #__ticket_print_overlay__ .ticket-header {
         text-align:center; margin-bottom:2px;
@@ -98,7 +117,11 @@ export function printTicketBrowser(data: TicketPrintData) {
       }
       #__ticket_print_overlay__ .ticket-address { font-size:9px; color:#555; }
       #__ticket_print_overlay__ .ticket-divider {
-        border-top:1px dashed #999; margin:5px 0;
+        border-top:1px dashed #999; margin:4px 0;
+      }
+      #__ticket_print_overlay__ .ticket-divider-double {
+        border-top:1px dashed #999; border-bottom:1px dashed #999;
+        height:2px; margin:4px 0;
       }
       #__ticket_print_overlay__ .ti-row { display:flex; justify-content:space-between; font-size:9px; }
       #__ticket_print_overlay__ .ti-row span:first-child { text-transform:uppercase; }
@@ -113,14 +136,14 @@ export function printTicketBrowser(data: TicketPrintData) {
         flex-shrink:0; margin-left:6px; white-space:nowrap;
       }
       #__ticket_print_overlay__ .ti-mod {
-        font-size:9px; padding-left:12px; color:#666;
+        font-size:9px; padding-left:16px; color:#666; font-style:italic;
       }
       #__ticket_print_overlay__ .tr-row {
         display:flex; justify-content:space-between; font-size:9px;
       }
       #__ticket_print_overlay__ .ticket-total {
         display:flex; justify-content:space-between; font-size:15px; font-weight:800;
-        border-top:1px dashed #ccc; padding-top:3px; margin-top:3px;
+        padding-top:2px; margin-top:2px;
       }
       #__ticket_print_overlay__ .ticket-footer {
         text-align:center; font-style:italic; font-size:9px;
@@ -147,8 +170,8 @@ export function printTicketBrowser(data: TicketPrintData) {
         }
         #__ticket_print_overlay__ .ticket {
           box-shadow:none !important; border-radius:0 !important;
-          padding:2mm 2mm 4mm 2mm !important;
-          font-size:2.2mm !important; line-height:1.25 !important;
+          padding:1.5mm 2mm 3mm 2mm !important;
+          font-size:2.2mm !important; line-height:1.2 !important;
           width:76mm !important; max-width:76mm !important;
           word-wrap:break-word !important; overflow-wrap:break-word !important;
         }
@@ -159,9 +182,13 @@ export function printTicketBrowser(data: TicketPrintData) {
         #__ticket_print_overlay__ .ticket-slogan { font-size:2mm !important; }
         #__ticket_print_overlay__ .ticket-address { font-size:1.8mm !important; }
         #__ticket_print_overlay__ .ti-line { font-size:2.2mm !important; }
-        #__ticket_print_overlay__ .ti-mod { font-size:1.8mm !important; }
+        #__ticket_print_overlay__ .ti-mod { font-size:1.7mm !important; padding-left:4mm !important; font-style:italic !important; }
         #__ticket_print_overlay__ .tr-row { font-size:1.8mm !important; }
-        #__ticket_print_overlay__ .ticket-total { font-size:3mm !important; }
+        #__ticket_print_overlay__ .ticket-total { font-size:3.2mm !important; font-weight:900 !important; }
+        #__ticket_print_overlay__ .ticket-divider-double {
+          border-top:1px dashed #999 !important; border-bottom:1px dashed #999 !important;
+          height:1.5px !important; margin:3px 0 !important;
+        }
         #__ticket_print_overlay__ .ticket-footer { font-size:1.8mm !important; }
         #__ticket_print_overlay__ .ti-name {
           max-width:55mm !important; word-break:break-word !important;
@@ -193,12 +220,15 @@ export function printTicketBrowser(data: TicketPrintData) {
         <div class="ticket-divider"></div>
         <div class="tr-row"><span>Subtotal</span><span>${fmtTicket(data.subtotal)}</span></div>
         <div class="tr-row"><span>Impuestos</span><span>${fmtTicket(data.tax)}</span></div>
+        <div class="ticket-divider-double"></div>
         <div class="ticket-total"><span>TOTAL</span><span>${fmtTicket(data.total)}</span></div>
+        <div class="ticket-divider-double"></div>
         <div class="tr-row"><span>Pago:</span><span style="text-transform:uppercase;font-weight:600">${data.paymentMethod}</span></div>
         ${cashHtml}
         <div class="ticket-divider"></div>
         <div class="ticket-footer">
-          <p>¡Gracias por su compra!</p>
+          <p>¡Gracias por tu visita!</p>
+          <p>FB/IG: @EsquitesLaParroquia</p>
           <p>esquiteslaparroquia.mx</p>
         </div>
         <div class="ticket-feed"></div>
