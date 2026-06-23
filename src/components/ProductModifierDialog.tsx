@@ -27,8 +27,23 @@ export function ProductModifierDialog({
     return initial;
   });
 
+  // Derived from product — keep before early return so hooks stay consistent
+  const groups = product?.modifierGroups ?? [];
+
+  const total = useMemo(() => {
+    if (!product) return 0;
+    let price = product.price;
+    groups.forEach((g) => {
+      selectedGroups[g.id]?.forEach((optId) => {
+        const opt = g.modifiers.find((o) => o.id === optId);
+        if (opt) price += opt.price;
+      });
+    });
+    return price;
+  }, [product?.price, groups, selectedGroups]);
+
+  // Early return AFTER all hooks
   if (!product) return null;
-  const groups = product.modifierGroups ?? [];
 
   const toggleOption = (groupId: string, optionId: string) => {
     const group = groups.find((g) => g.id === groupId);
@@ -55,17 +70,6 @@ export function ProductModifierDialog({
   };
 
   const allValid = groups.every((g) => isGroupValid(g.id));
-
-  const total = useMemo(() => {
-    let price = product.price;
-    groups.forEach((g) => {
-      selectedGroups[g.id]?.forEach((optId) => {
-        const opt = g.modifiers.find((o) => o.id === optId);
-        if (opt) price += opt.price;
-      });
-    });
-    return price;
-  }, [product.price, groups, selectedGroups]);
 
   const handleConfirm = () => {
     const mods: CartItem["modifiers"] = groups.flatMap((g) => {
