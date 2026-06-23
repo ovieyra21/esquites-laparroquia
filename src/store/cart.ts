@@ -23,6 +23,11 @@ type CartState = {
   clear: () => void;
 };
 
+const uid = () =>
+  typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+
 export const useCart = create<CartState>((set) => ({
   items: [],
   discount: 0,
@@ -33,7 +38,7 @@ export const useCart = create<CartState>((set) => ({
       items: [
         ...s.items,
         {
-          uid: crypto.randomUUID(),
+          uid: uid(),
           product,
           quantity: 1,
           modifiers,
