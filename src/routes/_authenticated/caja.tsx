@@ -497,7 +497,7 @@ function HistorialCortes() {
                     size="sm"
                     variant="default"
                     className="bg-emerald-600 hover:bg-emerald-700"
-                    onClick={() => window.open(`/corte/${r.id}`, "_blank", "width=380,height=600")}
+                    onClick={() => navigate({ to: `/corte/${r.id}` })}
                   >
                     <Monitor className="size-3.5 mr-1" /> Imprimir (navegador)
                   </Button>
@@ -642,6 +642,8 @@ function CloseCashDialog({
   const [closedDiff, setClosedDiff] = useState(0);
   const diff = real - expected;
 
+  const navigate = useNavigate();
+
   const submit = async () => {
     setBusy(true);
     try {
@@ -661,7 +663,7 @@ function CloseCashDialog({
 
   const handleBrowserPrint = () => {
     if (closedRegId) {
-      window.open(`/corte/${closedRegId}`, "_blank", "width=380,height=600");
+      navigate({ to: `/corte/${closedRegId}` });
     }
   };
 

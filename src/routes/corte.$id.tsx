@@ -1,5 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useServerFn } from "@tanstack/react-start";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { getCashCutDetail, type CashCutDetail } from "@/lib/cash.functions";
 import { Loader2 } from "lucide-react";
@@ -23,25 +22,25 @@ export const Route = createFileRoute("/corte/$id")({
 
 function CortePage() {
   const { id } = Route.useParams();
-  const getCut = useServerFn(getCashCutDetail);
+  const navigate = useNavigate();
   const [data, setData] = useState<CashCutDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    getCut({ data: { registerId: id } })
+    getCashCutDetail({ data: { registerId: id } })
       .then((d) => {
         setData(d as CashCutDetail);
         setTimeout(() => window.print(), 600);
       })
       .catch((e: any) => setError(e.message));
-  }, [id, getCut]);
+  }, [id]);
 
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white p-6 font-sans">
         <div className="text-center">
           <p className="text-red-600 mb-2">{error}</p>
-          <button onClick={() => window.close()} className="text-sm text-blue-600 underline">Cerrar</button>
+          <button onClick={() => navigate({ to: "/caja" })} className="text-sm text-blue-600 underline">Cerrar</button>
         </div>
       </div>
     );
@@ -66,7 +65,7 @@ function CortePage() {
           <button onClick={() => window.print()} className="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold shadow-lg transition">
             🖨️ Imprimir corte
           </button>
-          <button onClick={() => window.close()} className="px-5 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-xl font-medium transition">
+          <button onClick={() => navigate({ to: "/caja" })} className="px-5 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-xl font-medium transition">
             Cerrar
           </button>
         </div>
