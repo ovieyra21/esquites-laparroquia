@@ -4,7 +4,6 @@ import { Search, Trash2, Plus, Minus, X, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
 import { listCategories, listProducts } from "@/lib/products.functions";
 import { inferModifiers, type Product } from "@/lib/catalog-types";
 import { useCart, calcTotals, fmt } from "@/store/cart";
@@ -29,11 +28,8 @@ export const Route = createFileRoute("/_authenticated/pos")({
 function POSPage() {
   const [mounted, setMounted] = useState(false);
 
-  const getCats = useServerFn(listCategories);
-  const getProds = useServerFn(listProducts);
-
-  const catsQ = useQuery({ queryKey: ["pos-cats"], queryFn: () => getCats() });
-  const prodsQ = useQuery({ queryKey: ["pos-prods"], queryFn: () => getProds() });
+  const catsQ = useQuery({ queryKey: ["pos-cats"], queryFn: () => listCategories() });
+  const prodsQ = useQuery({ queryKey: ["pos-prods"], queryFn: () => listProducts() });
 
   const categories = catsQ.data ?? [];
   const allProducts = (prodsQ.data ?? []) as any[];
@@ -58,10 +54,9 @@ function POSPage() {
     queryFn: () => crmApi.getCustomers()
   });
 
-  const getSettingsFn = useServerFn(getSettings);
   const { data: settings } = useQuery({
     queryKey: ["settings"],
-    queryFn: () => getSettingsFn(),
+    queryFn: () => getSettings(),
   });
 
   const paymentProvider = (settings as any)?.payment_provider || "none";
@@ -177,8 +172,6 @@ function POSPage() {
     else cart.addItem(p, []);
   };
 
-  const sSale = useServerFn(saveSale);
-
   const handleConfirm = async (method: PaymentMethod, received?: number, change?: number) => {
     // Terminal payment: open terminal dialog, save after payment confirmed
     if ((method === "tarjeta" || method === "digital") && hasTerminal) {
@@ -272,7 +265,7 @@ function POSPage() {
         localStorage.setItem("buffered_sales", JSON.stringify(buffer));
         toast.warning("Sin conexión. Venta guardada localmente.");
       } else {
-        const result = await sSale({ data: saleData });
+        const result = await saveSale({ data: saleData });
         saleId = result.saleId;
         autoPrint = result.autoPrint;
       }
@@ -528,7 +521,7 @@ function POSPage() {
           onOpenChange={(o) => { if (!o) setPendingDigitalSale(null); setQrDialogOpen(o); }}
           onPaid={async () => {
             try {
-              const result = await sSale({ data: pendingDigitalSale });
+              const result = await saveSale({ data: pendingDigitalSale });
               const saleId = result.saleId;
               const completedSale = {
                 id: saleId,
@@ -581,7 +574,7 @@ function POSPage() {
           onOpenChange={(o) => { if (!o) setPendingTerminalSale(null); setTerminalOpen(o); }}
           onPaid={async () => {
             try {
-              const result = await sSale({ data: pendingTerminalSale });
+              const result = await saveSale({ data: pendingTerminalSale });
               const saleId = result.saleId;
               const completedSale = {
                 id: saleId,
