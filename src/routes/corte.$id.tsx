@@ -28,12 +28,14 @@ function CortePage() {
 
   useEffect(() => {
     getCashCutDetail({ data: { registerId: id } })
-      .then((d) => {
-        setData(d as CashCutDetail);
-        setTimeout(() => window.print(), 600);
-      })
+      .then((d) => setData(d as CashCutDetail))
       .catch((e: any) => setError(e.message));
   }, [id]);
+
+  // Auto-print once data is rendered
+  useEffect(() => {
+    if (data) window.print();
+  }, [data]);
 
   if (error) {
     return (
