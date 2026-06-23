@@ -107,7 +107,7 @@ export function printTicketBrowser(data: TicketPrintData) {
         text-align:center; margin-bottom:2px;
       }
       #__ticket_print_overlay__ .ticket-header img {
-        display:block; width:44px; height:44px; margin:0 auto; object-fit:contain;
+        display:block; width:48px; height:48px; margin:0 auto; object-fit:contain;
       }
       #__ticket_print_overlay__ .ticket-business {
         font-family:"Playfair Display",Georgia,serif; font-size:15px; font-weight:800;
@@ -176,7 +176,8 @@ export function printTicketBrowser(data: TicketPrintData) {
           word-wrap:break-word !important; overflow-wrap:break-word !important;
         }
         #__ticket_print_overlay__ .ticket-header img {
-          width:8mm !important; height:8mm !important;
+          display:block !important; margin:0 auto !important;
+          width:9mm !important; height:9mm !important; object-fit:contain !important;
         }
         #__ticket_print_overlay__ .ticket-business { font-size:3mm !important; }
         #__ticket_print_overlay__ .ticket-slogan { font-size:2mm !important; }
