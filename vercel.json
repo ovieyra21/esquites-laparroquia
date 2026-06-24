@@ -1,16 +1,5 @@
 {
   "buildCommand": "vite build",
-  "outputDirectory": ".output/public",
-  "framework": null,
-  "functions": {
-    "api/**": {
-      "runtime": "nodejs20.x"
-    }
-  },
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/api/server"
-    }
-  ]
+  "outputDirectory": ".vercel/output/static",
+  "framework": null
 }
