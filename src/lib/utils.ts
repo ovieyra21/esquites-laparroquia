@@ -208,7 +208,7 @@ export function printTicketBrowser(data: TicketPrintData) {
         <div class="ticket-header">
           <img src="${logoUrl}" alt="Logo" />
           <div class="ticket-business">Esquites La Parroquia</div>
-          <div class="ticket-slogan">El sabor que nos une</div>
+          <div class="ticket-slogan">¡El sabor que nos une!</div>
           <div class="ticket-address">Acámbaro, Gto.</div>
         </div>
         <div class="ticket-divider"></div>
@@ -259,7 +259,7 @@ export function buildTicketHash(data: TicketPrintData & {
   const payload = {
     ...data,
     businessName: data.businessName || "Esquites La Parroquia",
-    slogan: data.slogan || "El sabor que nos une",
+    slogan: data.slogan || "¡El sabor que nos une!",
     address: data.address || "Acámbaro, Gto.",
     phone: data.phone || "",
     footerMessage: data.footerMessage || "¡Gracias por su compra!",
@@ -273,4 +273,164 @@ export function buildTicketHash(data: TicketPrintData & {
     binary += String.fromCharCode(bytes[i]);
   }
   return btoa(binary);
+}
+
+// ─────────────────────────────────────────────
+//  Corte de caja — browser print (iframe)
+// ─────────────────────────────────────────────
+
+export interface CortePrintData {
+  id: string;
+  openedAt: string;
+  closedAt: string | null;
+  cashierName: string;
+  openingAmount: number;
+  openingBreakdown: Record<string, number> | null;
+  closingBreakdown: Record<string, number> | null;
+  salesCash: number;
+  salesCard: number;
+  salesTransfer: number;
+  salesCount: number;
+  expectedAmount: number;
+  realAmount: number;
+  difference: number;
+  notes: string | null;
+  topProducts: { name: string; quantity: number }[];
+  printedAt: string;
+}
+
+const fmtCorte = (n: number) =>
+  new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(n);
+
+export function printCorteBrowser(data: CortePrintData): void {
+  const logoUrl = logoTicket;
+  const totalSales = data.salesCash + data.salesCard + data.salesTransfer;
+  const diff = data.difference;
+
+  const topProductsHtml = data.topProducts.length > 0
+    ? data.topProducts.map((p, i) =>
+        `<div class="cr-row-sm"><span>${i + 1}. ${escapeHtml(p.name)}</span><span>${p.quantity}u</span></div>`
+      ).join("")
+    : "";
+
+  const breakdownHtml = data.closingBreakdown && Object.keys(data.closingBreakdown).length > 0
+    ? Object.entries(data.closingBreakdown)
+        .filter(([, qty]) => qty > 0)
+        .sort(([a], [b]) => parseFloat(b) - parseFloat(a))
+        .map(([den, qty]) =>
+          `<div class="cr-row-sm"><span>$${parseFloat(den).toFixed(den.includes(".") ? 2 : 0)}</span><span>${qty}u = ${fmtCorte(parseFloat(den) * qty)}</span></div>`
+        ).join("")
+    : "";
+
+  const diffClass = diff === 0 ? "" : diff > 0 ? "color:#059669" : "color:#dc2626";
+
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body { width:80mm; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size:11px; color:#1a1a1a; background:#fff; }
+  .cw { padding:4mm 3mm; }
+  .ch { text-align:center; padding-top:4mm; }
+  .clogo { width:9mm; height:auto; display:block; margin:0 auto 1mm auto; }
+  .ctitle { font-size:13px; font-weight:900; }
+  .csub { font-size:10px; font-style:italic; color:#666; }
+  .caddr { font-size:9px; color:#888; }
+  .cd { border-top:1px dashed #333; margin:2mm 0; }
+  .cst { font-size:12px; font-weight:900; text-align:center; letter-spacing:1mm; text-transform:uppercase; }
+  .cr { display:flex; justify-content:space-between; padding:0.5mm 0; font-size:11px; }
+  .cr-b { font-weight:900; }
+  .cr-row-sm { display:flex; justify-content:space-between; padding:0.3mm 0; font-size:10px; }
+  .cl { font-size:10px; font-weight:900; letter-spacing:0.5mm; text-transform:uppercase; margin:1mm 0; }
+  .cf { text-align:center; font-size:9px; color:#888; padding-bottom:4mm; }
+  .cfeed { height:10mm; }
+  @media print {
+    html, body { width:80mm; }
+    @page { margin:0; }
+  }
+</style>
+</head>
+<body>
+<div class="cw">
+  <div class="ch">
+    <img src="${logoUrl}" alt="Logo" class="clogo">
+    <div class="ctitle">Esquites La Parroquia</div>
+    <div class="csub">¡El sabor que nos une!</div>
+    <div class="caddr">Acámbaro, Gto.</div>
+  </div>
+
+  <div class="cd"></div>
+  <div class="cst">CORTE DE CAJA</div>
+  <div class="cd"></div>
+
+  <div class="cr"><span>Folio:</span><span style="font-weight:bold">${data.id.slice(0, 8).toUpperCase()}</span></div>
+  <div class="cr"><span>Cajero:</span><span>${escapeHtml(data.cashierName)}</span></div>
+  <div class="cr"><span>Apertura:</span><span>${escapeHtml(data.openedAt)}</span></div>
+  <div class="cr"><span>Cierre:</span><span>${data.closedAt ? escapeHtml(data.closedAt) : "—"}</span></div>
+
+  <div class="cd"></div>
+  <div class="cl">VENTAS</div>
+  <div class="cr"><span>Efectivo</span><span>${fmtCorte(data.salesCash)}</span></div>
+  <div class="cr"><span>Tarjeta</span><span>${fmtCorte(data.salesCard)}</span></div>
+  <div class="cr"><span>Transferencia</span><span>${fmtCorte(data.salesTransfer)}</span></div>
+  <div class="cr cr-b"><span>Total ventas</span><span>${fmtCorte(totalSales)}</span></div>
+  <div class="cr"><span>Tickets</span><span>${data.salesCount}</span></div>
+
+  ${data.topProducts.length > 0 ? `
+  <div class="cd"></div>
+  <div class="cl">MÁS VENDIDOS</div>
+  ${topProductsHtml}
+  ` : ""}
+
+  <div class="cd"></div>
+  <div class="cl">ARQUEO</div>
+  <div class="cr"><span>Fondo inicial</span><span>${fmtCorte(data.openingAmount)}</span></div>
+  <div class="cr"><span>Efectivo esperado</span><span>${fmtCorte(data.expectedAmount)}</span></div>
+  <div class="cr cr-b"><span>Efectivo real</span><span>${fmtCorte(data.realAmount)}</span></div>
+  <div class="cr cr-b" style="${diffClass}"><span>Diferencia</span><span>${diff >= 0 ? "+" : ""}${fmtCorte(diff)}</span></div>
+
+  ${breakdownHtml ? `
+  <div class="cd"></div>
+  <div class="cl">DESGLOSE</div>
+  ${breakdownHtml}
+  ` : ""}
+
+  ${data.notes ? `
+  <div class="cd"></div>
+  <div class="cl">NOTAS</div>
+  <p style="font-size:9px; font-style:italic;">${escapeHtml(data.notes)}</p>
+  ` : ""}
+
+  <div class="cd"></div>
+  <div class="cf">
+    <p style="font-style:italic;">Comprobante de corte de caja</p>
+    <p style="opacity:0.6; margin-top:0.5mm;">${escapeHtml(data.printedAt)}</p>
+  </div>
+
+  <div class="cfeed"></div>
+</div>
+<script>window.print();<\/script>
+</body>
+</html>`;
+
+  // Inject into hidden iframe
+  const existing = document.getElementById("__corte_print_overlay__");
+  if (existing) existing.remove();
+
+  const iframe = document.createElement("iframe");
+  iframe.id = "__corte_print_overlay__";
+  iframe.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;border:none;z-index:99999;background:#fff;";
+  document.body.appendChild(iframe);
+
+  const doc = iframe.contentDocument || iframe.contentWindow?.document;
+  if (doc) {
+    doc.open();
+    doc.write(html);
+    doc.close();
+  }
+}
+
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
