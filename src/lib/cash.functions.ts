@@ -216,7 +216,7 @@ export const getCashCutDetail = createServerFn({ method: "GET" })
       id: reg.id,
       openedAt: reg.opened_at,
       closedAt: reg.closed_at,
-      cashierName: profile?.data?.full_name ?? "Cajero",
+      cashierName: profile?.full_name ?? "Cajero",
       openingAmount: Number(reg.opening_amount),
       openingBreakdown,
       closingBreakdown,
