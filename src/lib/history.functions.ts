@@ -50,7 +50,8 @@ export type SaleHistoryRow = {
 
 export type SaleDetail = {
   id: string;
-  folio: number;
+  folio: string;
+
   created_at: string;
   total: number;
   subtotal: number;
