@@ -9,7 +9,7 @@ import {
   addCashMovement,
   getRegisterHistory,
 } from "@/lib/cash.functions";
-import { printCashCutReceipt } from "@/lib/printer.functions";
+
 import { DenominationCounter, type Breakdown } from "@/components/DenominationCounter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -412,7 +412,7 @@ function MethodCard({
 function HistorialCortes() {
   const navigate = useNavigate();
   const getHist = useServerFn(getRegisterHistory);
-  const printFn = useServerFn(printCashCutReceipt);
+  
 
   const { data, isLoading } = useQuery({
     queryKey: ["cash-register-history"],
