@@ -325,7 +325,9 @@ function AddExpenseDialog({
 
   const uploadPhoto = async (): Promise<string | null> => {
     if (!photoFile) return null;
-    const path = `${Date.now()}-${photoFile.name}`;
+    const { data: userData, error: userErr } = await supabase.auth.getUser();
+    if (userErr || !userData.user) { toast.error("Sesión no válida"); return null; }
+    const path = `${userData.user.id}/${Date.now()}-${photoFile.name}`;
     const { error } = await supabase.storage.from("receipts").upload(path, photoFile);
     if (error) { toast.error("Error al subir foto"); return null; }
     return path;
