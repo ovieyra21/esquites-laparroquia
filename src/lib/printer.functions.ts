@@ -1,6 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { z } from "zod";
+const printSaleInput = z.object({ saleId: z.string().uuid() });
+const printCutInput = z.object({ registerId: z.string().uuid() });
 import { getLogoRaster } from "./printer-logo";
 
 const printInput = z.object({ saleId: z.string().uuid() });
@@ -226,6 +229,7 @@ async function sendToPrinter(ip: string, port: number, data: Uint8Array): Promis
 
 export const printSaleTicket = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => printSaleInput.parse(d))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const [{ data: settings }, { data: sale }] = await Promise.all([
@@ -285,6 +289,7 @@ export const testPrinter = createServerFn({ method: "POST" })
 
 export const printCashCutReceipt = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => printCutInput.parse(d))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const [{ data: settings }, { data: register }] = await Promise.all([

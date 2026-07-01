@@ -23,6 +23,7 @@ const categoryInput = z.object({
 
 export const upsertCategory = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => categoryInput.parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
     if (data.id) {
@@ -42,6 +43,7 @@ export const upsertCategory = createServerFn({ method: "POST" })
 
 export const deleteCategory = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => idOnlyInput.parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
     const { count } = await context.supabase
@@ -66,6 +68,8 @@ export const listProducts = createServerFn({ method: "GET" })
     return data ?? [];
   });
 
+const idOnlyInput = z.object({ id: z.string().uuid() });
+const toggleInput = z.object({ id: z.string().uuid(), active: z.boolean() });
 const productInput = z.object({
   id: z.string().uuid().optional(),
   name: z.string().trim().min(1).max(200),
@@ -79,6 +83,7 @@ const productInput = z.object({
 
 export const upsertProduct = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => productInput.parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
     const payload = {
@@ -102,6 +107,7 @@ export const upsertProduct = createServerFn({ method: "POST" })
 
 export const toggleProductActive = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => toggleInput.parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
     const { error } = await context.supabase.from("products").update({ active: data.active }).eq("id", data.id);
@@ -111,6 +117,7 @@ export const toggleProductActive = createServerFn({ method: "POST" })
 
 export const deleteProduct = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => idOnlyInput.parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
     const { error } = await context.supabase.from("products").delete().eq("id", data.id);

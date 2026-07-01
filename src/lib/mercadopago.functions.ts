@@ -524,6 +524,7 @@ export type WebhookPayload = z.infer<typeof webhookSchema>;
 
 export const handleMercadoPagoWebhook = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => webhookSchema.parse(d))
   .handler(async ({ data, context }) => {
     const cfg = getServerConfig();
     if (data.type !== "payment") {

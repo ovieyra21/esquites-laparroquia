@@ -27,6 +27,7 @@ const saveSaleInput = z.object({
 
 export const saveSale = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => saveSaleInput.parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 
@@ -156,6 +157,7 @@ const getSaleInput = z.object({ saleId: z.string() });
 
 export const getSaleForTicket = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => getSaleInput.parse(d))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { data: sale, error } = await supabase
@@ -196,8 +198,10 @@ export const getSaleForTicket = createServerFn({ method: "GET" })
     };
   });
 
+const updateKdsInput = z.object({ saleId: z.string().uuid(), status: z.string() });
 export const updateKdsStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => updateKdsInput.parse(d))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { error } = await (supabase as any)
