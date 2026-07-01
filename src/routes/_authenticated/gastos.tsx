@@ -227,10 +227,14 @@ function GastosPage() {
                     <td className="p-3 text-right">
                       <div className="flex justify-end gap-1">
                         {e.photo_url && (
-                          <Button variant="ghost" size="icon" className="size-7" onClick={() => setPreviewUrl(e.photo_url)} title="Ver ticket">
+                          <Button variant="ghost" size="icon" className="size-7" onClick={async () => {
+                            const { data } = await supabase.storage.from("receipts").createSignedUrl(e.photo_url!, 300);
+                            if (data?.signedUrl) setPreviewUrl(data.signedUrl);
+                          }} title="Ver ticket">
                             <Eye className="size-3.5" />
                           </Button>
                         )}
+
                         <Button variant="ghost" size="icon" className="size-7 hover:text-destructive" onClick={() => handleDelete(e.id)} title="Eliminar">
                           <Trash2 className="size-3.5" />
                         </Button>
