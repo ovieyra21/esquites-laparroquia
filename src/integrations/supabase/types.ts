@@ -636,7 +636,11 @@ export type Database = {
           logo: string | null
           logo_data: string | null
           logo_url: string | null
+          mp_access_token: string | null
+          mp_device_id: string | null
+          mp_user_id: string | null
           open_drawer: boolean | null
+          payment_provider: string | null
           phone: string | null
           printer_enabled: boolean | null
           printer_ip: string | null
@@ -649,6 +653,7 @@ export type Database = {
           tax: number | null
           updated_at: string | null
           whatsapp_number: string | null
+          zettle_api_key: string | null
         }
         Insert: {
           address?: string | null
@@ -660,7 +665,11 @@ export type Database = {
           logo?: string | null
           logo_data?: string | null
           logo_url?: string | null
+          mp_access_token?: string | null
+          mp_device_id?: string | null
+          mp_user_id?: string | null
           open_drawer?: boolean | null
+          payment_provider?: string | null
           phone?: string | null
           printer_enabled?: boolean | null
           printer_ip?: string | null
@@ -673,6 +682,7 @@ export type Database = {
           tax?: number | null
           updated_at?: string | null
           whatsapp_number?: string | null
+          zettle_api_key?: string | null
         }
         Update: {
           address?: string | null
@@ -684,7 +694,11 @@ export type Database = {
           logo?: string | null
           logo_data?: string | null
           logo_url?: string | null
+          mp_access_token?: string | null
+          mp_device_id?: string | null
+          mp_user_id?: string | null
           open_drawer?: boolean | null
+          payment_provider?: string | null
           phone?: string | null
           printer_enabled?: boolean | null
           printer_ip?: string | null
@@ -697,6 +711,7 @@ export type Database = {
           tax?: number | null
           updated_at?: string | null
           whatsapp_number?: string | null
+          zettle_api_key?: string | null
         }
         Relationships: []
       }
