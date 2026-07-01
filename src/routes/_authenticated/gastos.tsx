@@ -324,9 +324,9 @@ function AddExpenseDialog({
     const path = `${Date.now()}-${photoFile.name}`;
     const { error } = await supabase.storage.from("receipts").upload(path, photoFile);
     if (error) { toast.error("Error al subir foto"); return null; }
-    const { data } = supabase.storage.from("receipts").getPublicUrl(path);
-    return data.publicUrl;
+    return path;
   };
+
 
   const handleOCR = async () => {
     if (!photoFile) {
