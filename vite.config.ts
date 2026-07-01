@@ -1,7 +1,6 @@
 import { defineConfig } from "vite";
 import path from "path";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
-import viteTsConfigPaths from "vite-tsconfig-paths";
 import { componentTagger } from "lovable-tagger";
 
 export default defineConfig(({ mode }) => ({
@@ -11,7 +10,6 @@ export default defineConfig(({ mode }) => ({
     hmr: { overlay: false },
   },
   plugins: [
-    viteTsConfigPaths({ projects: ["./tsconfig.json"] }),
     tanstackStart({ target: "cloudflare-module" }),
     mode === "development" && componentTagger(),
   ].filter(Boolean),
