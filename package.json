@@ -70,7 +70,8 @@
     "tesseract.js": "^7.0.0",
     "undici": "^8.5.0",
     "vaul": "^0.9.9",
-    "zod": "^3.25.76"
+    "zod": "^3.25.76",
+    "zustand": "^5.0.14"
   },
   "devDependencies": {
     "@eslint/js": "^9.32.0",
