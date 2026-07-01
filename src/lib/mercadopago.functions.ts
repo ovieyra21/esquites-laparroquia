@@ -58,6 +58,7 @@ export type PointIntentInput = z.infer<typeof pointIntentSchema>;
 
 export const createPointPaymentIntent = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => pointIntentSchema.parse(d))
   .handler(async ({ data }) => {
     const cfg = getServerConfig();
     const token = cfg.mercadopagoAccessToken;
@@ -98,6 +99,7 @@ const checkPointSchema = z.object({
 
 export const checkPointPaymentStatus = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => checkPointSchema.parse(d))
   .handler(async ({ data }) => {
     const cfg = getServerConfig();
     const token = cfg.mercadopagoAccessToken;
@@ -131,6 +133,7 @@ const cancelPointSchema = z.object({
 
 export const cancelPointPaymentIntent = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => cancelPointSchema.parse(d))
   .handler(async ({ data }) => {
     const cfg = getServerConfig();
     const token = cfg.mercadopagoAccessToken;
@@ -160,6 +163,7 @@ export type CreatePreferenceInput = z.infer<typeof createPreferenceSchema>;
 
 export const createPaymentPreference = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => createPreferenceSchema.parse(d))
   .handler(async ({ data }) => {
     const cfg = getServerConfig();
     const token = cfg.mercadopagoAccessToken;
@@ -232,6 +236,7 @@ export type CheckPaymentResult = {
 
 export const checkPaymentStatus = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => checkPaymentSchema.parse(d))
   .handler(async ({ data }) => {
     const cfg = getServerConfig();
     const token = cfg.mercadopagoAccessToken;
@@ -288,6 +293,7 @@ const zettlePaymentSchema = z.object({
 
 export const createZettlePayment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => zettlePaymentSchema.parse(d))
   .handler(async ({ data }) => {
     const cfg = getServerConfig();
     const token = cfg.zettleApiKey;
@@ -332,6 +338,7 @@ const checkZettleSchema = z.object({
 
 export const checkZettlePaymentStatus = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => checkZettleSchema.parse(d))
   .handler(async ({ data }) => {
     const cfg = getServerConfig();
     const token = cfg.zettleApiKey;
@@ -371,6 +378,7 @@ const terminalPaymentSchema = z.object({
 
 export const createTerminalPayment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => terminalPaymentSchema.parse(d))
   .handler(async ({ data }) => {
     const cfg = getServerConfig();
 
@@ -448,6 +456,7 @@ const checkTerminalSchema = z.object({
 
 export const checkTerminalPaymentStatus = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => checkTerminalSchema.parse(d))
   .handler(async ({ data }) => {
     const cfg = getServerConfig();
 

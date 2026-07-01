@@ -24,6 +24,7 @@ const listExpensesInput = z.object({
 });
 
 const deleteExpenseInput = z.object({ id: z.string().uuid() });
+const summaryInput = z.object({ dateFrom: z.string().optional().nullable(), dateTo: z.string().optional().nullable() });
 
 // ─── Types ───
 
@@ -108,6 +109,7 @@ export const deleteExpense = createServerFn({ method: "POST" })
 
 export const getExpenseSummary = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => summaryInput.parse(d))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { dateFrom, dateTo } = data;

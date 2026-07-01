@@ -23,6 +23,8 @@ export const listMenus = createServerFn({ method: "GET" })
     return menus ?? [];
   });
 
+const idInput = z.object({ id: z.string().uuid() });
+const publicMenuInput = z.object({ id: z.string().uuid().optional().nullable() }).optional();
 const uploadInput = z.object({
   filename: z.string().min(1).max(255),
   base64: z.string().min(1),
@@ -56,35 +58,38 @@ export const uploadMenu = createServerFn({ method: "POST" })
 
 export const setActiveMenu = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => idInput.parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     await supabaseAdmin.from("digital_menus").update({ active: false }).neq("id", data.id);
-    const { error } = await supabaseAdmin.from("digital_menus").update({ active: true }).eq("id", data.id);
+    const { error } = await supabaseAdmin.from("digital_menus").update({ active: true }).eq("id", data!.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
 
 export const deleteMenu = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => idInput.parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: menu } = await supabaseAdmin.from("digital_menus").select("file_url").eq("id", data.id).maybeSingle();
+    const { data: menu } = await supabaseAdmin.from("digital_menus").select("file_url").eq("id", data!.id).maybeSingle();
     if (menu?.file_url) {
       await supabaseAdmin.storage.from("menus").remove([menu.file_url]);
     }
-    const { error } = await supabaseAdmin.from("digital_menus").delete().eq("id", data.id);
+    const { error } = await supabaseAdmin.from("digital_menus").delete().eq("id", data!.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
 
 export const getMenuSignedUrl = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => idInput.parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: menu } = await supabaseAdmin.from("digital_menus").select("file_url").eq("id", data.id).maybeSingle();
+    const { data: menu } = await supabaseAdmin.from("digital_menus").select("file_url").eq("id", data!.id).maybeSingle();
     if (!menu?.file_url) throw new Error("Menú no encontrado.");
     const { data: signed, error } = await supabaseAdmin.storage.from("menus").createSignedUrl(menu.file_url, SIGNED_URL_TTL);
     if (error) throw new Error(error.message);
@@ -93,14 +98,15 @@ export const getMenuSignedUrl = createServerFn({ method: "POST" })
 
 // Public: resolve the active menu and return a signed URL (no auth required).
 export const getPublicMenuUrl = createServerFn({ method: "GET" })
+  .inputValidator((d: unknown) => publicMenuInput.parse(d) ?? {})
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     let menu;
-    if (data.id) {
+    if (data?.id) {
       const { data: row } = await supabaseAdmin
         .from("digital_menus")
         .select("id, filename, file_url, active")
-        .eq("id", data.id)
+        .eq("id", data!.id)
         .eq("active", true)
         .maybeSingle();
       menu = row;
