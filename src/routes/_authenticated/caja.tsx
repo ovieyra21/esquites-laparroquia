@@ -410,8 +410,10 @@ function MethodCard({
 
 /* ─── Historial ─── */
 function HistorialCortes() {
+  const navigate = useNavigate();
   const getHist = useServerFn(getRegisterHistory);
   const printFn = useServerFn(printCashCutReceipt);
+
   const { data, isLoading } = useQuery({
     queryKey: ["cash-register-history"],
     queryFn: () => getHist(),
