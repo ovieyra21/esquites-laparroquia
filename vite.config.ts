@@ -1,6 +1,7 @@
 import { defineConfig } from "vite";
 import path from "path";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
+import tailwindcss from "@tailwindcss/vite";
 import { componentTagger } from "lovable-tagger";
 
 export default defineConfig(({ mode }) => ({
@@ -10,6 +11,7 @@ export default defineConfig(({ mode }) => ({
     hmr: { overlay: false },
   },
   plugins: [
+    tailwindcss(),
     tanstackStart({ target: "cloudflare-module" }),
     mode === "development" && componentTagger(),
   ].filter(Boolean),
