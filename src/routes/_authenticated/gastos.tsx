@@ -371,7 +371,7 @@ function AddExpenseDialog({
       if (dateMatch) {
         try {
           const parts = dateMatch[1].split(/[\/\-]/);
-          const d = new Date(+parts[2].length === 2 ? "20" + parts[2] : parts[2], +parts[1] - 1, +parts[0]);
+          const d = new Date(parts[2].length === 2 ? +("20" + parts[2]) : +parts[2], +parts[1] - 1, +parts[0]);
           if (!isNaN(d.getTime())) setDate(format(d, "yyyy-MM-dd"));
         } catch {}
       }
