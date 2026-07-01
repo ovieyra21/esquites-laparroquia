@@ -9,7 +9,7 @@ import {
   addCashMovement,
   getRegisterHistory,
 } from "@/lib/cash.functions";
-import { printCashCutReceipt } from "@/lib/printer.functions";
+
 import { DenominationCounter, type Breakdown } from "@/components/DenominationCounter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -412,7 +412,7 @@ function MethodCard({
 function HistorialCortes() {
   const navigate = useNavigate();
   const getHist = useServerFn(getRegisterHistory);
-  const printFn = useServerFn(printCashCutReceipt);
+  
 
   const { data, isLoading } = useQuery({
     queryKey: ["cash-register-history"],
@@ -498,24 +498,10 @@ function HistorialCortes() {
                   <Button
                     size="sm"
                     variant="default"
-                    className="bg-emerald-600 hover:bg-emerald-700"
+                    className="bg-gold hover:bg-gold/90 text-black font-bold"
                     onClick={() => navigate({ to: `/corte/${r.id}` })}
                   >
-                    <Monitor className="size-3.5 mr-1" /> Imprimir (navegador)
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={async () => {
-                      try {
-                        await printFn({ data: { registerId: r.id } });
-                        toast.success("Imprimiendo...");
-                      } catch (e: any) {
-                        toast.error(e.message);
-                      }
-                    }}
-                  >
-                    <Printer className="size-3.5 mr-1" /> Imprimir (térmica)
+                    <Printer className="size-3.5 mr-1" /> Imprimir corte
                   </Button>
                 </div>
               </div>
