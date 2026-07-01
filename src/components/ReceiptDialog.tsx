@@ -1,15 +1,12 @@
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Printer, Share2, RotateCcw, Loader2, Monitor } from "lucide-react";
+import { Printer, X } from "lucide-react";
 import { fmt } from "@/store/cart";
 import type { Sale } from "@/store/sales";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { useServerFn } from "@tanstack/react-start";
-import { printSaleTicket } from "@/lib/printer.functions";
-import { buildTicketHash, printTicketBrowser } from "@/lib/utils";
-import { toast } from "sonner";
-import { useState, useCallback } from "react";
+import { printTicketBrowser } from "@/lib/utils";
+import { useCallback } from "react";
 import logoTicket from "@/assets/logo-ticket.png";
 
 export function ReceiptDialog({
@@ -23,10 +20,8 @@ export function ReceiptDialog({
 }) {
   if (!sale) return null;
   const date = new Date(sale.createdAt);
-  const printThermal = useServerFn(printSaleTicket);
-  const [printing, setPrinting] = useState(false);
 
-  const handleBrowserPrint = useCallback(() => {
+  const handlePrint = useCallback(() => {
     if (!sale) return;
     printTicketBrowser({
       folio: sale.folio,
@@ -46,18 +41,6 @@ export function ReceiptDialog({
       })),
     });
   }, [sale]);
-
-  const handleThermalPrint = async () => {
-    setPrinting(true);
-    try {
-      await printThermal({ data: { saleId: sale.id } });
-      toast.success("Imprimiendo ticket...");
-    } catch (e: any) {
-      toast.error(`Error: ${e.message}`);
-    } finally {
-      setPrinting(false);
-    }
-  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -111,25 +94,17 @@ export function ReceiptDialog({
           <div className="text-center text-[10px] mt-1 opacity-60">esquiteslaparroquia.mx</div>
         </div>
 
-        <div className="grid grid-cols-5 gap-2 p-3 bg-card">
-          <Button variant="default" size="sm" onClick={handleBrowserPrint} className="bg-success hover:bg-success/90" title="Imprimir ticket (navegador)">
-            <Monitor className="size-4" />
-          </Button>
+        <div className="grid grid-cols-2 gap-2 p-3 bg-card">
           <Button
-            variant="outline"
-            size="sm"
-            onClick={handleThermalPrint}
-            disabled={printing}
-            className="border-gold/40"
-            title="Imprimir térmica (red local)"
+            variant="default"
+            onClick={handlePrint}
+            className="bg-gold hover:bg-gold/90 text-black font-bold"
           >
-            {printing ? <Loader2 className="size-4 animate-spin" /> : <Printer className="size-4" />}
+            <Printer className="size-4 mr-2" /> Imprimir ticket
           </Button>
-          <Button variant="outline" size="sm" onClick={() => window.print()} title="Imprimir recibo (diálogo)">
-            <Printer className="size-4" />
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            <X className="size-4 mr-2" /> Cerrar
           </Button>
-          <Button variant="outline" size="sm"><Share2 className="size-4" /></Button>
-          <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}><RotateCcw className="size-4" /></Button>
         </div>
       </DialogContent>
     </Dialog>
