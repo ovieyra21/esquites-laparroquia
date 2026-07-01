@@ -133,7 +133,7 @@ function ConfigPage() {
   const onTest = async () => {
     setTesting(true);
     try {
-      await fnTest({ data: {} });
+      await fnTest();
       toast.success("Ticket de prueba enviado a la impresora");
     } catch (e: any) {
       toast.error(`No se pudo imprimir: ${e.message}`);
