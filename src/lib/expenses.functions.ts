@@ -52,6 +52,8 @@ export type ExpenseSummary = {
 
 export const createExpense = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => createExpenseInput.parse(d))
+
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const { error } = await supabase.from("expenses").insert({
