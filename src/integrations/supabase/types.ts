@@ -142,6 +142,7 @@ export type Database = {
       customers: {
         Row: {
           created_at: string | null
+          created_by: string | null
           email: string | null
           id: string
           loyalty_points: number | null
@@ -151,6 +152,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          created_by?: string | null
           email?: string | null
           id?: string
           loyalty_points?: number | null
@@ -160,6 +162,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          created_by?: string | null
           email?: string | null
           id?: string
           loyalty_points?: number | null
@@ -190,6 +193,48 @@ export type Database = {
           filename?: string | null
           id?: string
           uploaded_at?: string | null
+        }
+        Relationships: []
+      }
+      expenses: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string | null
+          description: string | null
+          expense_date: string
+          id: string
+          ocr_text: string | null
+          payment_method: string | null
+          photo_url: string | null
+          supplier: string | null
+          user_id: string | null
+        }
+        Insert: {
+          amount: number
+          category?: string
+          created_at?: string | null
+          description?: string | null
+          expense_date?: string
+          id?: string
+          ocr_text?: string | null
+          payment_method?: string | null
+          photo_url?: string | null
+          supplier?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string | null
+          description?: string | null
+          expense_date?: string
+          id?: string
+          ocr_text?: string | null
+          payment_method?: string | null
+          photo_url?: string | null
+          supplier?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -506,10 +551,14 @@ export type Database = {
           change_amount: number | null
           created_at: string | null
           customer_id: string | null
-          folio: number
+          folio: string
           id: string
           kds_status: string | null
+          payment_details: Json | null
+          payment_id: string | null
           payment_method: string | null
+          payment_status: string | null
+          status: string | null
           subtotal: number | null
           tax: number | null
           total: number | null
@@ -524,10 +573,14 @@ export type Database = {
           change_amount?: number | null
           created_at?: string | null
           customer_id?: string | null
-          folio?: number
+          folio?: string
           id?: string
           kds_status?: string | null
+          payment_details?: Json | null
+          payment_id?: string | null
           payment_method?: string | null
+          payment_status?: string | null
+          status?: string | null
           subtotal?: number | null
           tax?: number | null
           total?: number | null
@@ -542,10 +595,14 @@ export type Database = {
           change_amount?: number | null
           created_at?: string | null
           customer_id?: string | null
-          folio?: number
+          folio?: string
           id?: string
           kds_status?: string | null
+          payment_details?: Json | null
+          payment_id?: string | null
           payment_method?: string | null
+          payment_status?: string | null
+          status?: string | null
           subtotal?: number | null
           tax?: number | null
           total?: number | null
