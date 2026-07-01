@@ -73,6 +73,7 @@ export const createExpense = createServerFn({ method: "POST" })
 
 export const listExpenses = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => listExpensesInput.parse(d))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { dateFrom, dateTo, category, page, pageSize } = data;
@@ -97,6 +98,7 @@ export const listExpenses = createServerFn({ method: "GET" })
 
 export const deleteExpense = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => deleteExpenseInput.parse(d))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { error } = await supabase.from("expenses").delete().eq("id", data.id);
