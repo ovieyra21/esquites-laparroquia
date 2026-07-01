@@ -5,7 +5,8 @@ import { crmApi } from "@/lib/crm.functions";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Users, Search, UserPlus, Phone, Mail, Award,
-  History, Edit2, Loader2, Save, ShoppingBag, Calendar,
+  History, Edit2, Loader2, Save, ShoppingBag, Calendar, DollarSign,
+
 } from "lucide-react";
 import { toast } from "sonner";
 import { fmt } from "@/store/cart";
