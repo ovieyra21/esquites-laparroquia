@@ -177,7 +177,8 @@ export const getCashCutDetail = createServerFn({ method: "GET" })
     // Get cashier name
     const { data: profile } = reg.user_id
       ? await supabase.from("profiles").select("full_name").eq("id", reg.user_id).maybeSingle()
-      : { data: null };
+      : { data: null as { full_name: string | null } | null };
+
 
     // Get sales for this register
     const { data: sales } = await supabase
