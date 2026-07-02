@@ -1,11 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { getLogoRaster } from "./printer-logo";
 
 const printInput = z.object({ saleId: z.string().uuid() });
 const printCashCutInput = z.object({ registerId: z.string().uuid() });
-const testInput = z.object({});
 
 type PrinterSettings = {
   business_name?: string | null;
@@ -19,12 +17,82 @@ type PrinterSettings = {
   printer_width?: number | null;
   auto_cut?: boolean | null;
   open_drawer?: boolean | null;
-  logo_url?: string | null;
-  logo_data?: string | null;
-  show_logo?: boolean | null;
 };
 
-async function buildTicketBuffer(opts: {
+// ─────────── ESC/POS helpers (raw bytes, no external library) ───────────
+// Using raw commands avoids issues with encoder libs mis-handling codepages
+// or the printer entering unknown states after image commands.
+
+const ESC = 0x1b;
+const GS = 0x1d;
+
+// Transliterate Latin accents → ASCII. This bypasses codepage mismatches on
+// generic 80mm WiFi thermal printers, which is the #1 cause of "Acámbaro"
+// coming out as "Acßmbaro" or similar mojibake.
+function toAscii(s: string): string {
+  if (!s) return "";
+  return s
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // strip diacritics
+    .replace(/ñ/g, "n").replace(/Ñ/g, "N")
+    .replace(/¡/g, "!").replace(/¿/g, "?")
+    .replace(/[""]/g, '"').replace(/['']/g, "'")
+    .replace(/–|—/g, "-")
+    .replace(/[^\x20-\x7E\n]/g, ""); // drop anything else non-printable ASCII
+}
+
+class TicketBuilder {
+  private chunks: number[] = [];
+  private width: number;
+  constructor(widthMm: number) {
+    this.width = widthMm === 58 ? 32 : 48;
+    // Initialize + select codepage PC437 (USA, most compatible default)
+    this.chunks.push(ESC, 0x40); // ESC @ initialize
+    this.chunks.push(ESC, 0x74, 0x00); // ESC t 0 → PC437
+    this.align("left");
+  }
+  private push(...b: number[]) { this.chunks.push(...b); }
+  private text(s: string) {
+    const ascii = toAscii(s);
+    for (let i = 0; i < ascii.length; i++) this.chunks.push(ascii.charCodeAt(i));
+  }
+  align(mode: "left" | "center" | "right") {
+    const map = { left: 0, center: 1, right: 2 };
+    this.push(ESC, 0x61, map[mode]);
+    return this;
+  }
+  bold(on: boolean) { this.push(ESC, 0x45, on ? 1 : 0); return this; }
+  double(on: boolean) {
+    // GS ! n — n=0x11 double height & width, n=0x00 normal
+    this.push(GS, 0x21, on ? 0x11 : 0x00);
+    return this;
+  }
+  line(s = "") { this.text(s); this.push(0x0a); return this; }
+  feed(n = 1) { for (let i = 0; i < n; i++) this.push(0x0a); return this; }
+  divider() { this.line("-".repeat(this.width)); return this; }
+  /** Two-column row: label left, value right, guaranteed at least 1 space between. */
+  row(label: string, value: string) {
+    const l = toAscii(label);
+    const v = toAscii(value);
+    const spaceCount = Math.max(1, this.width - l.length - v.length);
+    this.line(l + " ".repeat(spaceCount) + v);
+    return this;
+  }
+  cut() {
+    // Feed then partial cut. GS V m — m=1 partial cut
+    this.feed(4);
+    this.push(GS, 0x56, 0x01);
+    return this;
+  }
+  drawer() {
+    // ESC p m t1 t2 — pulse pin 2
+    this.push(ESC, 0x70, 0x00, 0x19, 0xfa);
+    return this;
+  }
+  build(): Uint8Array { return new Uint8Array(this.chunks); }
+}
+
+function buildTicketBytes(opts: {
   settings: PrinterSettings;
   folio: number | string;
   createdAt: string;
@@ -36,193 +104,159 @@ async function buildTicketBuffer(opts: {
   payment: string;
   received?: number;
   change?: number;
-}): Promise<Uint8Array> {
-  const EscPosEncoder = (await import("esc-pos-encoder")).default;
-  const encoder = new EscPosEncoder();
+}): Uint8Array {
   const widthMm = opts.settings.printer_width === 58 ? 58 : 80;
-  const width = widthMm === 58 ? 32 : 48;
+  const b = new TicketBuilder(widthMm);
   const date = new Date(opts.createdAt);
-  const dateStr = date.toLocaleString("es-MX", { dateStyle: "short", timeStyle: "medium" });
+  const dateStr = date.toLocaleDateString("es-MX");
+  const timeStr = date.toLocaleTimeString("es-MX", { hour12: false });
 
-  // Logo raster, centered & sized to printer width
-  const logoRaster = Array.from(getLogoRaster(widthMm));
+  // Header — centered, business name double-size
+  b.align("center").bold(true).double(true)
+    .line(opts.settings.business_name ?? "Esquites La Parroquia")
+    .double(false).bold(false);
+  if (opts.settings.slogan) b.line(opts.settings.slogan);
+  if (opts.settings.address) b.line(opts.settings.address);
+  if (opts.settings.phone) b.line("Tel: " + opts.settings.phone);
+  b.feed(1);
 
-  let e = encoder.initialize().align("center").raw(logoRaster).newline()
-    .codepage("cp850")
-    .bold(true).size(2, 2).line(opts.settings.business_name ?? "Esquites La Parroquia").bold(false).size(1, 1);
-  if (opts.settings.slogan) e = e.line(opts.settings.slogan);
-  if (opts.settings.address) e = e.line(opts.settings.address);
-  if (opts.settings.phone) e = e.line("Tel: " + opts.settings.phone);
-  e = e.newline().align("left").line("-".repeat(width))
-    .line(`Folio: ${opts.folio}`)
-    .line(`Fecha: ${dateStr}`)
-    .line(`Cajero: ${opts.cashier}`)
-    .line("-".repeat(width));
+  // Meta — left aligned
+  b.align("left").divider()
+    .row("Folio:", String(opts.folio))
+    .row("Fecha:", dateStr)
+    .row("Hora:", timeStr)
+    .row("Cajero:", opts.cashier)
+    .divider();
 
+  // Items
   for (const it of opts.items) {
     const left = `${it.qty}x ${it.name}`;
     const right = `$${(it.price * it.qty).toFixed(2)}`;
-    e = e.line(padRight(left, width - right.length) + right);
-    for (const m of it.modifiers) e = e.line("  + " + m);
+    b.row(left, right);
+    for (const m of it.modifiers) if (m) b.line("  + " + m);
   }
-  e = e.line("-".repeat(width))
-    .line(padRight("Subtotal", width - 10) + ("$" + opts.subtotal.toFixed(2)).padStart(10))
-    .line(padRight("Impuestos", width - 10) + ("$" + opts.tax.toFixed(2)).padStart(10))
-    .bold(true).line(padRight("TOTAL", width - 12) + ("$" + opts.total.toFixed(2)).padStart(12)).bold(false)
-    .line(padRight("Pago", width - opts.payment.length) + opts.payment.toUpperCase());
+  b.divider()
+    .row("Subtotal", `$${opts.subtotal.toFixed(2)}`)
+    .row("Impuestos", `$${opts.tax.toFixed(2)}`);
+  b.bold(true).double(true)
+    .row("TOTAL", `$${opts.total.toFixed(2)}`)
+    .double(false).bold(false);
+  b.row("Pago:", (opts.payment || "").toUpperCase());
   if (opts.received !== undefined) {
-    e = e.line(padRight("Recibido", width - 10) + ("$" + opts.received.toFixed(2)).padStart(10));
-    e = e.line(padRight("Cambio", width - 10) + ("$" + (opts.change ?? 0).toFixed(2)).padStart(10));
+    b.row("Recibido", `$${opts.received.toFixed(2)}`);
+    b.row("Cambio", `$${(opts.change ?? 0).toFixed(2)}`);
   }
-  e = e.line("-".repeat(width)).align("center").newline();
-  if (opts.settings.footer_message) e = e.line(opts.settings.footer_message);
-  e = e.newline().newline().newline();
-  if (opts.settings.auto_cut !== false) e = e.cut();
-  return e.encode();
+  b.divider().align("center").feed(1);
+  if (opts.settings.footer_message) b.line(opts.settings.footer_message);
+  b.line("Gracias por su visita");
+  b.line("esquiteslaparroquia.mx");
+
+  if (opts.settings.open_drawer) b.drawer();
+  if (opts.settings.auto_cut !== false) b.cut();
+  else b.feed(4);
+  return b.build();
 }
 
-async function buildCashCutBuffer(opts: {
+function buildCashCutBytes(opts: {
   settings: PrinterSettings;
-  register: any; // We use any because columns might not be in types yet
+  register: any;
   cashier: string;
-}): Promise<Uint8Array> {
-  const EscPosEncoder = (await import("esc-pos-encoder")).default;
-  const encoder = new EscPosEncoder();
-  const width = opts.settings.printer_width === 58 ? 32 : 48;
+}): Uint8Array {
+  const widthMm = opts.settings.printer_width === 58 ? 58 : 80;
+  const b = new TicketBuilder(widthMm);
   const reg = opts.register;
+  const openedAt = new Date(reg.opened_at).toLocaleString("es-MX", { hour12: false });
+  const closedAt = reg.closed_at
+    ? new Date(reg.closed_at).toLocaleString("es-MX", { hour12: false })
+    : "Abierta";
 
-  const openedAt = new Date(reg.opened_at).toLocaleString("es-MX", { dateStyle: "short", timeStyle: "medium" });
-  const closedAt = reg.closed_at ? new Date(reg.closed_at).toLocaleString("es-MX", { dateStyle: "short", timeStyle: "medium" }) : "Abierta";
+  b.align("center").bold(true).double(true)
+    .line(opts.settings.business_name ?? "Esquites La Parroquia")
+    .double(false).bold(false);
+  if (opts.settings.slogan) b.line(opts.settings.slogan);
+  b.feed(1).bold(true).line("CORTE DE CAJA").bold(false).feed(1);
 
-  let e = encoder.initialize().codepage("cp850").align("center");
+  b.align("left").divider()
+    .row("Folio:", String(reg.id).split("-")[0].toUpperCase())
+    .row("Cajero:", opts.cashier)
+    .row("Apertura:", openedAt)
+    .row("Cierre:", closedAt)
+    .divider();
 
-  if (opts.settings.show_logo && opts.settings.logo_data) {
-    try {
-      const logo = JSON.parse(opts.settings.logo_data);
-      const rawData = Uint8Array.from(atob(logo.data), c => c.charCodeAt(0));
-      e = e.image({ data: rawData, width: logo.width, height: logo.height }, logo.width, logo.height, 'threshold', 128);
-    } catch {
-      e = e.bold(true).size(2, 1).line(opts.settings.business_name ?? "Esquites La Parroquia").bold(false).size(1, 1);
-    }
-  } else {
-    e = e.bold(true).size(2, 1).line(opts.settings.business_name ?? "Esquites La Parroquia").bold(false).size(1, 1);
-  }
-
-  if (opts.settings.slogan) e = e.line(opts.settings.slogan);
-
-  e = e.newline().bold(true).line("CORTE DE CAJA").bold(false)
-    .newline().align("left")
-    .line(`Folio Reg: ${reg.id.split('-')[0].toUpperCase()}`)
-    .line(`Cajero:    ${opts.cashier}`)
-    .line(`Apertura:  ${openedAt}`)
-    .line(`Cierre:    ${closedAt}`)
-    .line("-".repeat(width));
-
-  const sections = [
-    { label: "Fondo Inicial", value: reg.opening_amount },
-    { label: "Ventas Efectivo", value: reg.total_sales_cash || 0 },
-    { label: "Ventas Tarjeta", value: reg.total_sales_card || 0 },
-    { label: "Ventas Transf", value: reg.total_sales_transfer || 0 },
+  const rows: [string, number][] = [
+    ["Fondo inicial", Number(reg.opening_amount ?? 0)],
+    ["Ventas efectivo", Number(reg.total_sales_cash ?? 0)],
+    ["Ventas tarjeta", Number(reg.total_sales_card ?? 0)],
+    ["Ventas transf.", Number(reg.total_sales_transfer ?? 0)],
   ];
-
-  for (const s of sections) {
-    if (s.value === 0 && s.label.includes("Ventas") && s.label !== "Ventas Efectivo") continue;
-    const valStr = `$${Number(s.value).toFixed(2)}`;
-    e = e.line(padRight(s.label, width - valStr.length) + valStr);
-  }
-
-  e = e.line("-".repeat(width))
-    .bold(true)
-    .line(padRight("ESPERADO EN CAJA", width - 12) + ("$" + Number(reg.expected_amount || 0).toFixed(2)).padStart(12))
-    .line(padRight("REAL EN CAJA", width - 12) + ("$" + Number(reg.real_amount || 0).toFixed(2)).padStart(12))
+  for (const [label, val] of rows) b.row(label, `$${val.toFixed(2)}`);
+  b.divider().bold(true)
+    .row("ESPERADO", `$${Number(reg.expected_amount ?? 0).toFixed(2)}`)
+    .row("REAL EN CAJA", `$${Number(reg.real_amount ?? 0).toFixed(2)}`)
     .bold(false);
+  const diff = Number(reg.difference ?? 0);
+  b.row("Diferencia", `${diff >= 0 ? "+" : ""}$${diff.toFixed(2)}`);
 
-  const diff = Number(reg.difference || 0);
-  const diffStr = (diff >= 0 ? "+" : "") + diff.toFixed(2);
-  e = e.line(padRight("DIFERENCIA", width - diffStr.length) + diffStr)
-    .line("-".repeat(width));
-
-  // Denominations Breakdown
   const breakdown = reg.closing_breakdown || reg.opening_breakdown;
-  if (breakdown && typeof breakdown === 'object') {
-    e = e.align("center").line("DESGLOSE DE EFECTIVO").align("left");
-    const items = Object.entries(breakdown).map(([k, v]) => {
-      const val = parseFloat(k);
-      const isBill = [1000, 500, 200, 100, 50].includes(val) || (val === 20 && !reg.closing_breakdown); // Rough heuristic
-      return { val, qty: Number(v), type: val >= 50 ? 'B' : 'M' };
-    }).filter(i => i.qty > 0).sort((a, b) => b.val - a.val);
-
+  if (breakdown && typeof breakdown === "object") {
+    b.divider().align("center").line("DESGLOSE DE EFECTIVO").align("left");
+    const items = Object.entries(breakdown)
+      .map(([k, v]) => ({ val: parseFloat(k), qty: Number(v) }))
+      .filter((i) => i.qty > 0 && i.val > 0)
+      .sort((a, b) => b.val - a.val);
     for (const it of items) {
-      const label = `${it.type} $${it.val}`;
-      const qtyStr = `${it.qty}x`.padStart(6);
-      const subStr = `$${(it.val * it.qty).toFixed(2)}`.padStart(10);
-      e = e.line(padRight(label, width - qtyStr.length - subStr.length) + qtyStr + subStr);
+      b.row(`$${it.val} x ${it.qty}`, `$${(it.val * it.qty).toFixed(2)}`);
     }
-    e = e.line("-".repeat(width));
   }
 
   if (reg.notes) {
-    e = e.line("NOTAS:").line(reg.notes).line("-".repeat(width));
+    b.divider().line("NOTAS:").line(String(reg.notes));
   }
 
-  e = e.newline().newline().newline();
-  if (opts.settings.auto_cut !== false) e = e.cut();
-  return e.encode();
+  b.feed(1).align("center").line("--- fin del corte ---");
+  if (opts.settings.auto_cut !== false) b.cut();
+  else b.feed(4);
+  return b.build();
 }
 
-const padRight = (s: string, len: number) => (s.length >= len ? s.slice(0, len) : s + " ".repeat(len - s.length));
+// ───────────────────── network transport ─────────────────────
 
 async function sendToPrinter(ip: string, port: number, data: Uint8Array): Promise<void> {
-  const timeout = 5000; // 5 seconds timeout for WiFi printers
-
+  const timeout = 5000;
+  // Try Cloudflare Workers socket
   try {
-    // Obscure the specifier so Vite/Rollup doesn't try to resolve it at build time.
     const mod = "cloudflare" + ":" + "sockets";
     const { connect } = await (Function("s", "return import(s)")(mod) as Promise<any>);
     const socket = connect({ hostname: ip, port });
     const writer = socket.writable.getWriter();
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error("Timeout de conexión con la impresora (WiFi)")), timeout)
-    );
+    const to = new Promise((_, r) => setTimeout(() => r(new Error("Timeout con impresora")), timeout));
     try {
-      await Promise.race([writer.write(data), timeoutPromise]);
+      await Promise.race([writer.write(data), to]);
       await writer.close();
       return;
     } finally {
       try { writer.releaseLock(); } catch { }
     }
-  } catch {
-    // Falls through to Node.js check
-  }
+  } catch { /* fallthrough */ }
 
-  // Try Node.js Net (Local Dev / VPS)
+  // Node.js path (local dev / VPS / Vercel Node runtime)
   try {
     const net = await import("node:net");
-    return new Promise((resolve, reject) => {
+    return await new Promise<void>((resolve, reject) => {
       const client = new net.Socket();
       client.setTimeout(timeout);
-
       client.connect(port, ip, () => {
-        client.write(Buffer.from(data), () => {
-          client.end();
-          resolve();
-        });
+        client.write(Buffer.from(data), () => { client.end(); resolve(); });
       });
-
-      client.on("error", (err) => {
-        client.destroy();
-        reject(new Error(`Error de impresora: ${err.message}`));
-      });
-
-      client.on("timeout", () => {
-        client.destroy();
-        reject(new Error("Timeout de conexión con la impresora (WiFi)"));
-      });
+      client.on("error", (err) => { client.destroy(); reject(new Error("Error impresora: " + err.message)); });
+      client.on("timeout", () => { client.destroy(); reject(new Error("Timeout con impresora")); });
     });
-  } catch (e) {
-    throw new Error("El entorno actual no soporta impresión directa por socket TCP.");
+  } catch {
+    throw new Error("Entorno sin soporte TCP para impresión directa.");
   }
 }
+
+// ───────────────────── server functions ─────────────────────
 
 export const printSaleTicket = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -242,7 +276,7 @@ export const printSaleTicket = createServerFn({ method: "POST" })
       ? await supabase.from("profiles").select("full_name").eq("id", sale.user_id).maybeSingle()
       : { data: null as { full_name: string | null } | null };
 
-    const buffer = await buildTicketBuffer({
+    const buffer = buildTicketBytes({
       settings,
       folio: sale.folio,
       createdAt: sale.created_at ?? new Date().toISOString(),
@@ -260,8 +294,7 @@ export const printSaleTicket = createServerFn({ method: "POST" })
       received: sale.cash_received != null ? Number(sale.cash_received) : undefined,
       change: sale.change_amount != null ? Number(sale.change_amount) : undefined,
     });
-
-    await sendToPrinter(settings.printer_ip!, settings.printer_port ?? 9100, buffer);
+    await sendToPrinter(settings.printer_ip, settings.printer_port ?? 9100, buffer);
     return { ok: true };
   });
 
@@ -271,13 +304,12 @@ export const testPrinter = createServerFn({ method: "POST" })
     const { supabase } = context;
     const { data: settings } = await supabase.from("settings").select("*").limit(1).maybeSingle();
     if (!settings?.printer_ip) throw new Error("Configura la IP de la impresora primero.");
-
-    const buffer = await buildTicketBuffer({
+    const buffer = buildTicketBytes({
       settings,
       folio: "TEST",
       createdAt: new Date().toISOString(),
       cashier: "Sistema",
-      items: [{ name: "Prueba de impresión", qty: 1, price: 0, modifiers: ["OK"] }],
+      items: [{ name: "Ticket de prueba", qty: 1, price: 0, modifiers: ["Impresion correcta"] }],
       subtotal: 0, tax: 0, total: 0, payment: "test",
     });
     await sendToPrinter(settings.printer_ip, settings.printer_port ?? 9100, buffer);
@@ -293,7 +325,6 @@ export const printCashCutReceipt = createServerFn({ method: "POST" })
       supabase.from("settings").select("*").limit(1).maybeSingle(),
       supabase.from("cash_register").select("*").eq("id", data.registerId).single(),
     ]);
-
     if (!settings) throw new Error("Configuración no encontrada.");
     if (!settings.printer_enabled) throw new Error("La impresora térmica no está habilitada.");
     if (!settings.printer_ip) throw new Error("Falta la IP de la impresora.");
@@ -303,12 +334,11 @@ export const printCashCutReceipt = createServerFn({ method: "POST" })
       ? await supabase.from("profiles").select("full_name").eq("id", register.user_id).maybeSingle()
       : { data: null as { full_name: string | null } | null };
 
-    const buffer = await buildCashCutBuffer({
+    const buffer = buildCashCutBytes({
       settings,
       register,
       cashier: profile?.full_name ?? "Cajero",
     });
-
     await sendToPrinter(settings.printer_ip, settings.printer_port ?? 9100, buffer);
     return { ok: true };
   });
