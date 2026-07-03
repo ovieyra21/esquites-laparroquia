@@ -76,7 +76,6 @@ const defaults: Settings = {
 function ConfigPage() {
   const fnGet = useServerFn(getSettings);
   const fnUpdate = useServerFn(updateSettings);
-  const fnTest = useServerFn(testPrinter);
 
   const [s, setS] = useState<Settings>(defaults);
   const [loading, setLoading] = useState(true);
@@ -124,6 +123,8 @@ function ConfigPage() {
           payment_provider: s.payment_provider ?? undefined,
           mp_device_id: s.mp_device_id ?? undefined,
           zettle_api_key: s.zettle_api_key ?? undefined,
+          print_mode: (s.print_mode === "navegador" ? "navegador" : "proxy") as "proxy" | "navegador",
+          proxy_url: s.proxy_url || "http://localhost:3128",
         },
       });
       toast.success("Configuración guardada");
