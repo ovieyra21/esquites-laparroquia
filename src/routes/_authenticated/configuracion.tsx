@@ -13,8 +13,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getSettings, updateSettings } from "@/lib/settings.functions";
-import { testPrinter } from "@/lib/printer.functions";
 import { printTicketBrowser } from "@/lib/utils";
+import { buildTestTicketBytes, printViaProxy } from "@/lib/escpos";
 
 export const Route = createFileRoute("/_authenticated/configuracion")({
   ssr: false,
@@ -43,6 +43,8 @@ type Settings = {
   payment_provider: string | null;
   mp_device_id: string | null;
   zettle_api_key: string | null;
+  print_mode: string | null;
+  proxy_url: string | null;
 };
 
 const defaults: Settings = {
@@ -67,6 +69,8 @@ const defaults: Settings = {
   payment_provider: "none",
   mp_device_id: "",
   zettle_api_key: "",
+  print_mode: "proxy",
+  proxy_url: "http://localhost:3128",
 };
 
 function ConfigPage() {
