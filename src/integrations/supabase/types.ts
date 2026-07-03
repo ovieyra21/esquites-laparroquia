@@ -642,10 +642,12 @@ export type Database = {
           open_drawer: boolean | null
           payment_provider: string | null
           phone: string | null
+          print_mode: string
           printer_enabled: boolean | null
           printer_ip: string | null
           printer_port: number | null
           printer_width: number | null
+          proxy_url: string
           qr_url: string | null
           rfc: string | null
           show_logo: boolean | null
@@ -671,10 +673,12 @@ export type Database = {
           open_drawer?: boolean | null
           payment_provider?: string | null
           phone?: string | null
+          print_mode?: string
           printer_enabled?: boolean | null
           printer_ip?: string | null
           printer_port?: number | null
           printer_width?: number | null
+          proxy_url?: string
           qr_url?: string | null
           rfc?: string | null
           show_logo?: boolean | null
@@ -700,10 +704,12 @@ export type Database = {
           open_drawer?: boolean | null
           payment_provider?: string | null
           phone?: string | null
+          print_mode?: string
           printer_enabled?: boolean | null
           printer_ip?: string | null
           printer_port?: number | null
           printer_width?: number | null
+          proxy_url?: string
           qr_url?: string | null
           rfc?: string | null
           show_logo?: boolean | null
