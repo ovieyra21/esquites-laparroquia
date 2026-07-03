@@ -247,8 +247,30 @@ function ConfigPage() {
               <div><Label>Puerto</Label><Input type="number" min="1" max="65535" value={s.printer_port ?? 9100} onChange={(e) => set("printer_port", Number(e.target.value))} /></div>
               <div><Label>Ancho del papel</Label><Select value={String(s.printer_width ?? 80)} onValueChange={(v) => set("printer_width", Number(v))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="58">58 mm</SelectItem><SelectItem value="80">80 mm</SelectItem></SelectContent></Select></div>
             </div>
+            <div className="grid md:grid-cols-3 gap-4 pt-2 border-t border-border">
+              <div>
+                <Label>Modo de impresión</Label>
+                <Select value={s.print_mode === "navegador" ? "navegador" : "proxy"} onValueChange={(v) => set("print_mode", v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="proxy">🖨️ Proxy ESC/POS (recomendado)</SelectItem>
+                    <SelectItem value="navegador">🌐 Navegador (diálogo de impresión)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="md:col-span-2">
+                <Label>URL del proxy de impresión</Label>
+                <Input value={s.proxy_url ?? ""} maxLength={255} placeholder="http://localhost:3128" onChange={(e) => set("proxy_url", e.target.value)} />
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  Descarga el proxy (<a href="/proxy/escpos-proxy.mjs" download className="text-gold underline">escpos-proxy.mjs</a>,{" "}
+                  <a href="/proxy/start-proxy.bat" download className="text-gold underline">Windows</a>,{" "}
+                  <a href="/proxy/start-proxy-termux.sh" download className="text-gold underline">Android/Termux</a>) y córrelo en un
+                  equipo de la misma red WiFi que la impresora. Si corre en la propia tablet (Termux), deja <code>localhost:3128</code>.
+                </p>
+              </div>
+            </div>
             <div className="space-y-3 pt-2 border-t border-border">
-              <div className="flex items-center justify-between"><div><Label>Imprimir automáticamente</Label><p className="text-xs text-muted-foreground">Abre el ticket en ventana nueva al cobrar (impresión por navegador).</p></div><Switch checked={!!s.auto_print} onCheckedChange={(v) => set("auto_print", v)} /></div>
+              <div className="flex items-center justify-between"><div><Label>Imprimir automáticamente</Label><p className="text-xs text-muted-foreground">Imprime el ticket al cobrar, sin diálogos.</p></div><Switch checked={!!s.auto_print} onCheckedChange={(v) => set("auto_print", v)} /></div>
               <div className="flex items-center justify-between"><div><Label>Corte automático</Label><p className="text-xs text-muted-foreground">Corta el papel al final del ticket (solo impresora térmica).</p></div><Switch checked={!!s.auto_cut} onCheckedChange={(v) => set("auto_cut", v)} /></div>
               <div className="flex items-center justify-between"><div><Label>Abrir cajón de dinero</Label><p className="text-xs text-muted-foreground">Envía pulso de apertura tras imprimir (solo impresora térmica).</p></div><Switch checked={!!s.open_drawer} onCheckedChange={(v) => set("open_drawer", v)} /></div>
             </div>
