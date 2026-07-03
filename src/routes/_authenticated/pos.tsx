@@ -14,9 +14,9 @@ import { PaymentQRDialog } from "@/components/PaymentQRDialog";
 import { PaymentTerminalDialog } from "@/components/PaymentTerminalDialog";
 import { ReceiptDialog } from "@/components/ReceiptDialog";
 import { saveSale } from "@/lib/sales.functions";
-import { getSettings } from "@/lib/settings.functions";
+import { getSettings, getPrintSettings } from "@/lib/settings.functions";
 import { crmApi } from "@/lib/crm.functions";
-import { buildTicketHash, printTicketBrowser } from "@/lib/utils";
+import { smartPrintTicket } from "@/lib/escpos";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/pos")({
@@ -57,6 +57,11 @@ function POSPage() {
   const { data: settings } = useQuery({
     queryKey: ["settings"],
     queryFn: () => getSettings(),
+  });
+
+  const { data: printSettings } = useQuery({
+    queryKey: ["print-settings"],
+    queryFn: () => getPrintSettings(),
   });
 
   const paymentProvider = (settings as any)?.payment_provider || "none";
