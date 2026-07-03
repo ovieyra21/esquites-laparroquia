@@ -138,10 +138,22 @@ function ConfigPage() {
   const onTest = async () => {
     setTesting(true);
     try {
-      await fnTest();
-      toast.success("Ticket de prueba enviado a la impresora");
+      await printViaProxy(
+        { printer_ip: s.printer_ip, printer_port: s.printer_port, proxy_url: s.proxy_url },
+        buildTestTicketBytes({
+          business_name: s.business_name,
+          slogan: s.slogan,
+          address: s.address,
+          phone: s.phone,
+          footer_message: s.footer_message,
+          printer_width: s.printer_width,
+          auto_cut: s.auto_cut,
+          open_drawer: false,
+        }),
+      );
+      toast.success("Ticket de prueba enviado a la impresora vía proxy");
     } catch (e: any) {
-      toast.error(`No se pudo imprimir: ${e.message}`);
+      toast.error(`No se pudo imprimir: ${e.message}. Verifica que el proxy esté corriendo.`);
     } finally {
       setTesting(false);
     }
