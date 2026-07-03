@@ -546,7 +546,7 @@ function POSPage() {
               playSaleSound();
               setPendingDigitalSale(null);
               if (result.autoPrint) {
-                printTicketBrowser({
+                void smartPrintTicket({
                   cashier: "Cajero",
                   folio: pendingDigitalSale.folio,
                   createdAt: new Date().toISOString(),
@@ -560,7 +560,7 @@ function POSPage() {
                     unitPrice: i.unitPrice,
                     modifiers: i.modifiers.filter(m => m.optionLabel).map(m => m.optionLabel),
                   })),
-                });
+                }, printSettings);
               }
             } catch (e: any) {
               toast.error(`Error al confirmar pago: ${e.message}`);
@@ -599,7 +599,7 @@ function POSPage() {
               playSaleSound();
               setPendingTerminalSale(null);
               if (result.autoPrint) {
-                printTicketBrowser({
+                void smartPrintTicket({
                   cashier: "Cajero",
                   folio: pendingTerminalSale.folio,
                   createdAt: new Date().toISOString(),
@@ -613,7 +613,7 @@ function POSPage() {
                     unitPrice: i.unitPrice,
                     modifiers: i.modifiers.filter(m => m.optionLabel).map(m => m.optionLabel),
                   })),
-                });
+                }, printSettings);
               }
             } catch (e: any) {
               toast.error(`Error al guardar venta: ${e.message}`);
