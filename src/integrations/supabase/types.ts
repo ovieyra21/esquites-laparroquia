@@ -642,10 +642,12 @@ export type Database = {
           open_drawer: boolean | null
           payment_provider: string | null
           phone: string | null
+          print_mode: string
           printer_enabled: boolean | null
           printer_ip: string | null
           printer_port: number | null
           printer_width: number | null
+          proxy_url: string
           qr_url: string | null
           rfc: string | null
           show_logo: boolean | null
@@ -671,10 +673,12 @@ export type Database = {
           open_drawer?: boolean | null
           payment_provider?: string | null
           phone?: string | null
+          print_mode?: string
           printer_enabled?: boolean | null
           printer_ip?: string | null
           printer_port?: number | null
           printer_width?: number | null
+          proxy_url?: string
           qr_url?: string | null
           rfc?: string | null
           show_logo?: boolean | null
@@ -700,10 +704,12 @@ export type Database = {
           open_drawer?: boolean | null
           payment_provider?: string | null
           phone?: string | null
+          print_mode?: string
           printer_enabled?: boolean | null
           printer_ip?: string | null
           printer_port?: number | null
           printer_width?: number | null
+          proxy_url?: string
           qr_url?: string | null
           rfc?: string | null
           show_logo?: boolean | null
@@ -771,6 +777,27 @@ export type Database = {
       get_cash_register_summary: {
         Args: { _register_id: string }
         Returns: Json
+      }
+      get_print_settings: {
+        Args: never
+        Returns: {
+          address: string
+          auto_cut: boolean
+          auto_print: boolean
+          business_name: string
+          footer_message: string
+          open_drawer: boolean
+          phone: string
+          print_mode: string
+          printer_enabled: boolean
+          printer_ip: string
+          printer_port: number
+          printer_width: number
+          proxy_url: string
+          show_logo: boolean
+          slogan: string
+          tax: number
+        }[]
       }
       has_role: {
         Args: {

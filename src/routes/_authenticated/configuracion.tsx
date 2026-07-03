@@ -13,8 +13,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getSettings, updateSettings } from "@/lib/settings.functions";
-import { testPrinter } from "@/lib/printer.functions";
 import { printTicketBrowser } from "@/lib/utils";
+import { buildTestTicketBytes, printViaProxy } from "@/lib/escpos";
 
 export const Route = createFileRoute("/_authenticated/configuracion")({
   ssr: false,
@@ -43,6 +43,8 @@ type Settings = {
   payment_provider: string | null;
   mp_device_id: string | null;
   zettle_api_key: string | null;
+  print_mode: string | null;
+  proxy_url: string | null;
 };
 
 const defaults: Settings = {
@@ -67,12 +69,13 @@ const defaults: Settings = {
   payment_provider: "none",
   mp_device_id: "",
   zettle_api_key: "",
+  print_mode: "proxy",
+  proxy_url: "http://localhost:3128",
 };
 
 function ConfigPage() {
   const fnGet = useServerFn(getSettings);
   const fnUpdate = useServerFn(updateSettings);
-  const fnTest = useServerFn(testPrinter);
 
   const [s, setS] = useState<Settings>(defaults);
   const [loading, setLoading] = useState(true);
@@ -120,6 +123,8 @@ function ConfigPage() {
           payment_provider: s.payment_provider ?? undefined,
           mp_device_id: s.mp_device_id ?? undefined,
           zettle_api_key: s.zettle_api_key ?? undefined,
+          print_mode: (s.print_mode === "navegador" ? "navegador" : "proxy") as "proxy" | "navegador",
+          proxy_url: s.proxy_url || "http://localhost:3128",
         },
       });
       toast.success("Configuración guardada");
@@ -133,10 +138,22 @@ function ConfigPage() {
   const onTest = async () => {
     setTesting(true);
     try {
-      await fnTest();
-      toast.success("Ticket de prueba enviado a la impresora");
+      await printViaProxy(
+        { printer_ip: s.printer_ip, printer_port: s.printer_port, proxy_url: s.proxy_url },
+        buildTestTicketBytes({
+          business_name: s.business_name,
+          slogan: s.slogan,
+          address: s.address,
+          phone: s.phone,
+          footer_message: s.footer_message,
+          printer_width: s.printer_width,
+          auto_cut: s.auto_cut,
+          open_drawer: false,
+        }),
+      );
+      toast.success("Ticket de prueba enviado a la impresora vía proxy");
     } catch (e: any) {
-      toast.error(`No se pudo imprimir: ${e.message}`);
+      toast.error(`No se pudo imprimir: ${e.message}. Verifica que el proxy esté corriendo.`);
     } finally {
       setTesting(false);
     }
@@ -230,8 +247,30 @@ function ConfigPage() {
               <div><Label>Puerto</Label><Input type="number" min="1" max="65535" value={s.printer_port ?? 9100} onChange={(e) => set("printer_port", Number(e.target.value))} /></div>
               <div><Label>Ancho del papel</Label><Select value={String(s.printer_width ?? 80)} onValueChange={(v) => set("printer_width", Number(v))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="58">58 mm</SelectItem><SelectItem value="80">80 mm</SelectItem></SelectContent></Select></div>
             </div>
+            <div className="grid md:grid-cols-3 gap-4 pt-2 border-t border-border">
+              <div>
+                <Label>Modo de impresión</Label>
+                <Select value={s.print_mode === "navegador" ? "navegador" : "proxy"} onValueChange={(v) => set("print_mode", v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="proxy">🖨️ Proxy ESC/POS (recomendado)</SelectItem>
+                    <SelectItem value="navegador">🌐 Navegador (diálogo de impresión)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="md:col-span-2">
+                <Label>URL del proxy de impresión</Label>
+                <Input value={s.proxy_url ?? ""} maxLength={255} placeholder="http://localhost:3128" onChange={(e) => set("proxy_url", e.target.value)} />
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  Descarga el proxy (<a href="/proxy/escpos-proxy.mjs" download className="text-gold underline">escpos-proxy.mjs</a>,{" "}
+                  <a href="/proxy/start-proxy.bat" download className="text-gold underline">Windows</a>,{" "}
+                  <a href="/proxy/start-proxy-termux.sh" download className="text-gold underline">Android/Termux</a>) y córrelo en un
+                  equipo de la misma red WiFi que la impresora. Si corre en la propia tablet (Termux), deja <code>localhost:3128</code>.
+                </p>
+              </div>
+            </div>
             <div className="space-y-3 pt-2 border-t border-border">
-              <div className="flex items-center justify-between"><div><Label>Imprimir automáticamente</Label><p className="text-xs text-muted-foreground">Abre el ticket en ventana nueva al cobrar (impresión por navegador).</p></div><Switch checked={!!s.auto_print} onCheckedChange={(v) => set("auto_print", v)} /></div>
+              <div className="flex items-center justify-between"><div><Label>Imprimir automáticamente</Label><p className="text-xs text-muted-foreground">Imprime el ticket al cobrar, sin diálogos.</p></div><Switch checked={!!s.auto_print} onCheckedChange={(v) => set("auto_print", v)} /></div>
               <div className="flex items-center justify-between"><div><Label>Corte automático</Label><p className="text-xs text-muted-foreground">Corta el papel al final del ticket (solo impresora térmica).</p></div><Switch checked={!!s.auto_cut} onCheckedChange={(v) => set("auto_cut", v)} /></div>
               <div className="flex items-center justify-between"><div><Label>Abrir cajón de dinero</Label><p className="text-xs text-muted-foreground">Envía pulso de apertura tras imprimir (solo impresora térmica).</p></div><Switch checked={!!s.open_drawer} onCheckedChange={(v) => set("open_drawer", v)} /></div>
             </div>

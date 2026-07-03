@@ -53,10 +53,10 @@ export function printTicketBrowser(data: TicketPrintData) {
     .map(
       (item) => `
     <div class="ti-line">
-      <span class="ti-name">${item.quantity}x ${item.name}</span>
+      <span class="ti-name">${item.quantity}x ${escapeHtml(item.name)}</span>
       <span class="ti-price">${fmtTicket(item.unitPrice * item.quantity)}</span>
     </div>
-    ${item.modifiers.length ? item.modifiers.map((m) => `<div class="ti-mod">+ ${m}</div>`).join("") : ""}`
+    ${item.modifiers.length ? item.modifiers.map((m) => `<div class="ti-mod">+ ${escapeHtml(m)}</div>`).join("") : ""}`
     )
     .join("");
 
@@ -212,10 +212,10 @@ export function printTicketBrowser(data: TicketPrintData) {
           <div class="ticket-address">Acámbaro, Gto.</div>
         </div>
         <div class="ticket-divider"></div>
-        <div class="ti-row"><span>Folio:</span><span style="font-weight:bold">${data.folio}</span></div>
+        <div class="ti-row"><span>Folio:</span><span style="font-weight:bold">${escapeHtml(String(data.folio))}</span></div>
         <div class="ti-row"><span>Fecha:</span><span>${dateStr}</span></div>
         <div class="ti-row"><span>Hora:</span><span>${timeStr}</span></div>
-        <div class="ti-row"><span>Cajero:</span><span>${data.cashier}</span></div>
+        <div class="ti-row"><span>Cajero:</span><span>${escapeHtml(data.cashier)}</span></div>
         <div class="ticket-divider"></div>
         ${itemsHtml}
         <div class="ticket-divider"></div>
@@ -224,7 +224,7 @@ export function printTicketBrowser(data: TicketPrintData) {
         <div class="ticket-divider-double"></div>
         <div class="ticket-total"><span>TOTAL</span><span>${fmtTicket(data.total)}</span></div>
         <div class="ticket-divider-double"></div>
-        <div class="tr-row"><span>Pago:</span><span style="text-transform:uppercase;font-weight:600">${data.paymentMethod}</span></div>
+        <div class="tr-row"><span>Pago:</span><span style="text-transform:uppercase;font-weight:600">${escapeHtml(data.paymentMethod)}</span></div>
         ${cashHtml}
         <div class="ticket-divider"></div>
         <div class="ticket-footer">

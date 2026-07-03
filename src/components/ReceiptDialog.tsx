@@ -5,7 +5,9 @@ import { fmt } from "@/store/cart";
 import type { Sale } from "@/store/sales";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { printTicketBrowser } from "@/lib/utils";
+import { smartPrintTicket } from "@/lib/escpos";
+import { getPrintSettings } from "@/lib/settings.functions";
+import { useQuery } from "@tanstack/react-query";
 import { useCallback } from "react";
 import logoTicket from "@/assets/logo-ticket.png";
 
@@ -18,12 +20,15 @@ export function ReceiptDialog({
   open: boolean;
   onOpenChange: (b: boolean) => void;
 }) {
-  if (!sale) return null;
-  const date = new Date(sale.createdAt);
+  const { data: printSettings } = useQuery({
+    queryKey: ["print-settings"],
+    queryFn: () => getPrintSettings(),
+    enabled: open,
+  });
 
   const handlePrint = useCallback(() => {
     if (!sale) return;
-    printTicketBrowser({
+    void smartPrintTicket({
       folio: sale.folio,
       createdAt: sale.createdAt,
       cashier: sale.cashier,
@@ -39,8 +44,11 @@ export function ReceiptDialog({
         unitPrice: i.unitPrice,
         modifiers: i.modifiers.filter((m) => m.optionLabel).map((m) => m.optionLabel),
       })),
-    });
-  }, [sale]);
+    }, printSettings);
+  }, [sale, printSettings]);
+
+  if (!sale) return null;
+  const date = new Date(sale.createdAt);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

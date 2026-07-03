@@ -9,6 +9,36 @@ export const getSettings = createServerFn({ method: "GET" })
     return data;
   });
 
+export type PrintSettingsRow = {
+  business_name: string | null;
+  slogan: string | null;
+  address: string | null;
+  phone: string | null;
+  footer_message: string | null;
+  tax: number | null;
+  printer_enabled: boolean | null;
+  printer_ip: string | null;
+  printer_port: number | null;
+  printer_width: number | null;
+  auto_print: boolean | null;
+  auto_cut: boolean | null;
+  open_drawer: boolean | null;
+  show_logo: boolean | null;
+  print_mode: string | null;
+  proxy_url: string | null;
+};
+
+/** Datos de impresión accesibles para cualquier usuario autenticado (incl. cajeros).
+ *  Usa la función SECURITY DEFINER `get_print_settings`, que solo expone campos no sensibles. */
+export const getPrintSettings = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data, error } = await (context.supabase as any).rpc("get_print_settings");
+    if (error) throw new Error(error.message);
+    const row = Array.isArray(data) ? data[0] : data;
+    return (row ?? null) as PrintSettingsRow | null;
+  });
+
 const updateInput = z.object({
   business_name: z.string().max(255).optional(),
   slogan: z.string().max(255).optional().nullable(),
@@ -31,6 +61,8 @@ const updateInput = z.object({
   payment_provider: z.enum(["mercadopago_point", "mercadopago_qr", "zettle", "none"]).optional(),
   mp_device_id: z.string().optional().nullable(),
   zettle_api_key: z.string().optional().nullable(),
+  print_mode: z.enum(["proxy", "navegador"]).optional(),
+  proxy_url: z.string().max(255).optional(),
 });
 
 export const updateSettings = createServerFn({ method: "POST" })

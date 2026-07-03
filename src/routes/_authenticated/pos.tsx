@@ -14,9 +14,9 @@ import { PaymentQRDialog } from "@/components/PaymentQRDialog";
 import { PaymentTerminalDialog } from "@/components/PaymentTerminalDialog";
 import { ReceiptDialog } from "@/components/ReceiptDialog";
 import { saveSale } from "@/lib/sales.functions";
-import { getSettings } from "@/lib/settings.functions";
+import { getSettings, getPrintSettings } from "@/lib/settings.functions";
 import { crmApi } from "@/lib/crm.functions";
-import { buildTicketHash, printTicketBrowser } from "@/lib/utils";
+import { smartPrintTicket } from "@/lib/escpos";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/pos")({
@@ -57,6 +57,11 @@ function POSPage() {
   const { data: settings } = useQuery({
     queryKey: ["settings"],
     queryFn: () => getSettings(),
+  });
+
+  const { data: printSettings } = useQuery({
+    queryKey: ["print-settings"],
+    queryFn: () => getPrintSettings(),
   });
 
   const paymentProvider = (settings as any)?.payment_provider || "none";
@@ -292,7 +297,7 @@ function POSPage() {
       playSaleSound();
 
       if (autoPrint && saleId) {
-        printTicketBrowser({
+        void smartPrintTicket({
           cashier: "Cajero",
           folio,
           createdAt: new Date().toISOString(),
@@ -308,7 +313,7 @@ function POSPage() {
             unitPrice: i.unitPrice,
             modifiers: i.modifiers.filter(m => m.optionLabel).map(m => m.optionLabel),
           })),
-        });
+        }, printSettings);
       }
     } catch (e: any) {
       toast.error(`Error al guardar venta: ${e.message}`);
@@ -541,7 +546,7 @@ function POSPage() {
               playSaleSound();
               setPendingDigitalSale(null);
               if (result.autoPrint) {
-                printTicketBrowser({
+                void smartPrintTicket({
                   cashier: "Cajero",
                   folio: pendingDigitalSale.folio,
                   createdAt: new Date().toISOString(),
@@ -555,7 +560,7 @@ function POSPage() {
                     unitPrice: i.unitPrice,
                     modifiers: i.modifiers.filter(m => m.optionLabel).map(m => m.optionLabel),
                   })),
-                });
+                }, printSettings);
               }
             } catch (e: any) {
               toast.error(`Error al confirmar pago: ${e.message}`);
@@ -594,7 +599,7 @@ function POSPage() {
               playSaleSound();
               setPendingTerminalSale(null);
               if (result.autoPrint) {
-                printTicketBrowser({
+                void smartPrintTicket({
                   cashier: "Cajero",
                   folio: pendingTerminalSale.folio,
                   createdAt: new Date().toISOString(),
@@ -608,7 +613,7 @@ function POSPage() {
                     unitPrice: i.unitPrice,
                     modifiers: i.modifiers.filter(m => m.optionLabel).map(m => m.optionLabel),
                   })),
-                });
+                }, printSettings);
               }
             } catch (e: any) {
               toast.error(`Error al guardar venta: ${e.message}`);
