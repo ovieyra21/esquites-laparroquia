@@ -56,6 +56,20 @@ export const Route = createFileRoute("/_authenticated/caja")({
   component: CajaPage,
 });
 
+/** Imprime el corte vía proxy ESC/POS; si no está disponible, abre la vista de impresión por navegador. */
+async function printCorteSmart(registerId: string, navigate: (o: { to: string }) => void) {
+  try {
+    const [detail, ps] = await Promise.all([
+      getCashCutDetail({ data: { registerId } }),
+      getPrintSettings(),
+    ]);
+    const mode = await smartPrintCorte(detail as any, ps as any);
+    if (mode === "browser") navigate({ to: `/corte/${registerId}` });
+  } catch {
+    navigate({ to: `/corte/${registerId}` });
+  }
+}
+
 function CajaPage() {
   const qc = useQueryClient();
   const navigate = useNavigate();
@@ -502,7 +516,7 @@ function HistorialCortes() {
                     size="sm"
                     variant="default"
                     className="bg-gold hover:bg-gold/90 text-black font-bold"
-                    onClick={() => navigate({ to: `/corte/${r.id}` })}
+                    onClick={() => printCorteSmart(r.id, navigate)}
                   >
                     <Printer className="size-3.5 mr-1" /> Imprimir corte
                   </Button>
@@ -654,7 +668,7 @@ function CloseCashDialog({
 
   const handleBrowserPrint = () => {
     if (closedRegId) {
-      navigate({ to: `/corte/${closedRegId}` });
+      void printCorteSmart(closedRegId, navigate);
     }
   };
 
