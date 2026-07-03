@@ -8,7 +8,10 @@ import {
   closeCashRegister,
   addCashMovement,
   getRegisterHistory,
+  getCashCutDetail,
 } from "@/lib/cash.functions";
+import { getPrintSettings } from "@/lib/settings.functions";
+import { smartPrintCorte } from "@/lib/escpos";
 
 import { DenominationCounter, type Breakdown } from "@/components/DenominationCounter";
 import { Button } from "@/components/ui/button";
