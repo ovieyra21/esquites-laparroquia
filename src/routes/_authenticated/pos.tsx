@@ -297,7 +297,7 @@ function POSPage() {
       playSaleSound();
 
       if (autoPrint && saleId) {
-        printTicketBrowser({
+        void smartPrintTicket({
           cashier: "Cajero",
           folio,
           createdAt: new Date().toISOString(),
@@ -313,7 +313,7 @@ function POSPage() {
             unitPrice: i.unitPrice,
             modifiers: i.modifiers.filter(m => m.optionLabel).map(m => m.optionLabel),
           })),
-        });
+        }, printSettings);
       }
     } catch (e: any) {
       toast.error(`Error al guardar venta: ${e.message}`);
