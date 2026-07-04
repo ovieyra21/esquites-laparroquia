@@ -26,7 +26,20 @@ export type PrintSettings = {
   open_drawer?: boolean | null;
   print_mode?: string | null;
   proxy_url?: string | null;
+  show_logo?: boolean | null;
 };
+
+// Prepend the logo raster block if enabled. The raw bytes already include the
+// GS v 0 header, so we just center + push them as-is.
+function prependLogo(chunks: number[], settings: PrintSettings) {
+  if (!settings.show_logo) return;
+  const widthMm = settings.printer_width === 58 ? 58 : 80;
+  const raster = getLogoRaster(widthMm);
+  chunks.push(0x1b, 0x61, 0x01); // ESC a 1 → center
+  for (let i = 0; i < raster.length; i++) chunks.push(raster[i]);
+  chunks.push(0x0a); // feed
+  chunks.push(0x1b, 0x61, 0x00); // back to left
+}
 
 // Translitera acentos latinos → ASCII. Evita el desajuste de codepage en
 // térmicas WiFi genéricas ("Acámbaro" → "Acßmbaro" y similares).
