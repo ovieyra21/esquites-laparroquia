@@ -400,7 +400,7 @@ function POSPage() {
         </div>
       </section>
 
-      <aside className="w-[380px] lg:w-[420px] shrink-0 bg-surface border-l border-border flex flex-col">
+      <aside className="w-[320px] md:w-[340px] lg:w-[420px] shrink-0 bg-surface border-l border-border flex flex-col">
         <div className="p-5 border-b border-border">
           <h2 className="font-display text-xl">Carrito de venta</h2>
           <p className="text-xs text-muted-foreground">{cart.items.length} producto(s)</p>
