@@ -7,6 +7,7 @@
 import { toast } from "sonner";
 import { printTicketBrowser, type TicketPrintData } from "./utils";
 import type { CashCutDetail } from "./cash.functions";
+import { getLogoRaster } from "./printer-logo";
 
 const ESC = 0x1b;
 const GS = 0x1d;
