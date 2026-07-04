@@ -161,6 +161,7 @@ export function buildCashCutBytes(detail: CashCutDetail, settings: PrintSettings
   const fmtDate = (iso: string | null) =>
     iso ? new Date(iso).toLocaleString("es-MX", { hour12: false }) : "Abierta";
 
+  b.logo(settings);
   b.align("center").bold(true).double(true)
     .line(settings.business_name ?? "Esquites La Parroquia")
     .double(false).bold(false);
