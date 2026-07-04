@@ -332,7 +332,14 @@ function POSPage() {
   return (
     <div className="flex h-screen w-full">
       <section className="flex-1 flex flex-col p-4 lg:p-6 min-w-0">
-        <header className="flex items-center gap-3 mb-4">
+        <header className="flex items-center gap-2 mb-4">
+          <button
+            onClick={() => useUI.getState().toggleSidebar()}
+            title="Mostrar/ocultar menú"
+            className="hidden md:flex size-12 shrink-0 items-center justify-center rounded-xl bg-surface gold-border text-muted-foreground hover:text-foreground"
+          >
+            {useUI((s) => s.sidebarHidden) ? <PanelLeft className="size-5" /> : <PanelLeftClose className="size-5" />}
+          </button>
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
             <Input
