@@ -7,6 +7,7 @@
 import { toast } from "sonner";
 import { printTicketBrowser, type TicketPrintData } from "./utils";
 import type { CashCutDetail } from "./cash.functions";
+import { getLogoRaster } from "./printer-logo";
 
 const ESC = 0x1b;
 const GS = 0x1d;
@@ -25,7 +26,20 @@ export type PrintSettings = {
   open_drawer?: boolean | null;
   print_mode?: string | null;
   proxy_url?: string | null;
+  show_logo?: boolean | null;
 };
+
+// Prepend the logo raster block if enabled. The raw bytes already include the
+// GS v 0 header, so we just center + push them as-is.
+function prependLogo(chunks: number[], settings: PrintSettings) {
+  if (!settings.show_logo) return;
+  const widthMm = settings.printer_width === 58 ? 58 : 80;
+  const raster = getLogoRaster(widthMm);
+  chunks.push(0x1b, 0x61, 0x01); // ESC a 1 → center
+  for (let i = 0; i < raster.length; i++) chunks.push(raster[i]);
+  chunks.push(0x0a); // feed
+  chunks.push(0x1b, 0x61, 0x00); // back to left
+}
 
 // Translitera acentos latinos → ASCII. Evita el desajuste de codepage en
 // térmicas WiFi genéricas ("Acámbaro" → "Acßmbaro" y similares).
@@ -82,6 +96,11 @@ export class TicketBuilder {
     this.push(ESC, 0x70, 0x00, 0x19, 0xfa); // pulso cajón
     return this;
   }
+  /** Inserta el logo raster ya renderizado (centrado). */
+  logo(settings: PrintSettings) {
+    prependLogo(this.chunks, settings);
+    return this;
+  }
   build(): Uint8Array { return new Uint8Array(this.chunks); }
 }
 
@@ -94,6 +113,7 @@ export function buildTicketBytes(data: TicketPrintData, settings: PrintSettings)
   const dateStr = date.toLocaleDateString("es-MX");
   const timeStr = date.toLocaleTimeString("es-MX", { hour12: false });
 
+  b.logo(settings);
   b.align("center").bold(true).double(true)
     .line(settings.business_name ?? "Esquites La Parroquia")
     .double(false).bold(false);
@@ -141,6 +161,7 @@ export function buildCashCutBytes(detail: CashCutDetail, settings: PrintSettings
   const fmtDate = (iso: string | null) =>
     iso ? new Date(iso).toLocaleString("es-MX", { hour12: false }) : "Abierta";
 
+  b.logo(settings);
   b.align("center").bold(true).double(true)
     .line(settings.business_name ?? "Esquites La Parroquia")
     .double(false).bold(false);

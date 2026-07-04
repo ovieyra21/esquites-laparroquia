@@ -1,11 +1,12 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { ShoppingCart, History, LayoutDashboard, Box, QrCode, Settings, LogOut, Wallet, Users, ChefHat, Receipt, Package } from "lucide-react";
+import { ShoppingCart, History, LayoutDashboard, Box, QrCode, Settings, LogOut, Wallet, Users, ChefHat, Receipt, Package, PanelLeftClose, PanelLeft } from "lucide-react";
 import { Logo } from "./Logo";
 import { ThemeToggle } from "./ThemeToggle";
 import { useAuth, hasRole } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useUI } from "@/store/ui";
 
 const NAV = [
   { to: "/pos", label: "Punto de Venta", icon: ShoppingCart, roles: ["admin", "cajero", "supervisor"] as const },
@@ -39,6 +40,9 @@ export function Sidebar() {
     refetchInterval: 20_000,
   });
 
+  const sidebarHidden = useUI((s) => s.sidebarHidden);
+  const toggleSidebar = useUI((s) => s.toggleSidebar);
+
   if (!user) return null;
   if (pathname === "/auth") return null;
 
@@ -51,17 +55,39 @@ export function Sidebar() {
     navigate({ to: "/auth", replace: true });
   };
 
+  if (sidebarHidden) {
+    // Botón flotante para volver a mostrar el menú
+    return (
+      <button
+        onClick={toggleSidebar}
+        title="Mostrar menú"
+        className="fixed bottom-4 left-4 z-40 size-11 rounded-full bg-gold text-black shadow-[var(--shadow-gold)] flex items-center justify-center hover:scale-105 transition"
+      >
+        <PanelLeft className="size-5" />
+      </button>
+    );
+  }
+
   return (
     <aside className="hidden md:flex w-64 shrink-0 flex-col bg-sidebar border-r border-sidebar-border">
       <div className="p-5 flex items-center justify-between border-b border-sidebar-border">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 min-w-0">
           <Logo size={44} />
-          <div>
-            <div className="font-display text-lg gold-text leading-tight">Esquites</div>
-            <div className="text-xs text-muted-foreground">La Parroquia · POS</div>
+          <div className="min-w-0">
+            <div className="font-display text-lg gold-text leading-tight truncate">Esquites</div>
+            <div className="text-xs text-muted-foreground truncate">La Parroquia · POS</div>
           </div>
         </div>
-        <ThemeToggle />
+        <div className="flex items-center gap-1 shrink-0">
+          <ThemeToggle />
+          <button
+            onClick={toggleSidebar}
+            title="Ocultar menú"
+            className="size-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-sidebar-accent flex items-center justify-center"
+          >
+            <PanelLeftClose className="size-4" />
+          </button>
+        </div>
       </div>
       <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
         {visible.map(({ to, label, icon: Icon, badge }) => {

@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState, useEffect, useRef, useCallback } from "react";
-import { Search, Trash2, Plus, Minus, X, Loader2 } from "lucide-react";
+import { Search, Trash2, Plus, Minus, X, Loader2, PanelLeftClose, PanelLeft } from "lucide-react";
+import { useUI } from "@/store/ui";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
@@ -331,7 +332,8 @@ function POSPage() {
   return (
     <div className="flex h-screen w-full">
       <section className="flex-1 flex flex-col p-4 lg:p-6 min-w-0">
-        <header className="flex items-center gap-3 mb-4">
+        <header className="flex items-center gap-2 mb-4">
+          <SidebarToggleButton />
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
             <Input
@@ -392,7 +394,7 @@ function POSPage() {
         </div>
       </section>
 
-      <aside className="w-[380px] lg:w-[420px] shrink-0 bg-surface border-l border-border flex flex-col">
+      <aside className="w-[320px] md:w-[340px] lg:w-[420px] shrink-0 bg-surface border-l border-border flex flex-col">
         <div className="p-5 border-b border-border">
           <h2 className="font-display text-xl">Carrito de venta</h2>
           <p className="text-xs text-muted-foreground">{cart.items.length} producto(s)</p>
@@ -627,6 +629,20 @@ function POSPage() {
         onOpenChange={(b) => !b && setLastSale(null)}
       />
     </div>
+  );
+}
+
+function SidebarToggleButton() {
+  const hidden = useUI((s) => s.sidebarHidden);
+  const toggle = useUI((s) => s.toggleSidebar);
+  return (
+    <button
+      onClick={toggle}
+      title={hidden ? "Mostrar menú" : "Ocultar menú"}
+      className="hidden md:flex size-12 shrink-0 items-center justify-center rounded-xl bg-surface gold-border text-muted-foreground hover:text-foreground"
+    >
+      {hidden ? <PanelLeft className="size-5" /> : <PanelLeftClose className="size-5" />}
+    </button>
   );
 }
 
