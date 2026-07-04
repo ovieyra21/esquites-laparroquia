@@ -96,6 +96,11 @@ export class TicketBuilder {
     this.push(ESC, 0x70, 0x00, 0x19, 0xfa); // pulso cajón
     return this;
   }
+  /** Inserta el logo raster ya renderizado (centrado). */
+  logo(settings: PrintSettings) {
+    prependLogo(this.chunks, settings);
+    return this;
+  }
   build(): Uint8Array { return new Uint8Array(this.chunks); }
 }
 
