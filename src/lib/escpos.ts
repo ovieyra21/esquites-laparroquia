@@ -113,6 +113,7 @@ export function buildTicketBytes(data: TicketPrintData, settings: PrintSettings)
   const dateStr = date.toLocaleDateString("es-MX");
   const timeStr = date.toLocaleTimeString("es-MX", { hour12: false });
 
+  b.logo(settings);
   b.align("center").bold(true).double(true)
     .line(settings.business_name ?? "Esquites La Parroquia")
     .double(false).bold(false);
