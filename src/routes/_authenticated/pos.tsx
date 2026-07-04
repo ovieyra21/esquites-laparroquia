@@ -632,6 +632,20 @@ function POSPage() {
   );
 }
 
+function SidebarToggleButton() {
+  const hidden = useUI((s) => s.sidebarHidden);
+  const toggle = useUI((s) => s.toggleSidebar);
+  return (
+    <button
+      onClick={toggle}
+      title={hidden ? "Mostrar menú" : "Ocultar menú"}
+      className="hidden md:flex size-12 shrink-0 items-center justify-center rounded-xl bg-surface gold-border text-muted-foreground hover:text-foreground"
+    >
+      {hidden ? <PanelLeft className="size-5" /> : <PanelLeftClose className="size-5" />}
+    </button>
+  );
+}
+
 function Row({ label, value, muted }: { label: string; value: string; muted?: boolean }) {
   return (
     <div className={`flex justify-between text-sm ${muted ? "text-muted-foreground" : ""}`}>
