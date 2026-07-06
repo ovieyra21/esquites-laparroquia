@@ -94,15 +94,17 @@ export function CheckoutDialog({
               <span className="text-2xl font-bold text-success">{fmt(change)}</span>
             </div>
           </div>
-        )}
+        </div>
 
-        <Button
-          disabled={!canConfirm}
-          onClick={() => onConfirm(method, method === "efectivo" ? received : undefined, method === "efectivo" ? change : undefined)}
-          className="w-full h-14 text-lg font-bold bg-success hover:bg-success/90 text-success-foreground"
-        >
-          <Check className="size-5 mr-2" /> Confirmar cobro
-        </Button>
+        <div className="p-4 pt-3 shrink-0 border-t border-border">
+          <Button
+            disabled={!canConfirm}
+            onClick={() => onConfirm(method, method === "efectivo" ? received : undefined, method === "efectivo" ? change : undefined)}
+            className="w-full h-14 text-lg font-bold bg-success hover:bg-success/90 text-success-foreground"
+          >
+            <Check className="size-5 mr-2" /> Confirmar cobro
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );
