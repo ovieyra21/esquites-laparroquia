@@ -94,7 +94,9 @@ export function CheckoutDialog({
               <span className="text-2xl font-bold text-success">{fmt(change)}</span>
             </div>
           </div>
+        )}
         </div>
+
 
         <div className="p-4 pt-3 shrink-0 border-t border-border">
           <Button
