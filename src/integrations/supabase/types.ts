@@ -551,8 +551,12 @@ export type Database = {
           change_amount: number | null
           created_at: string | null
           customer_id: string | null
+          discount: number
+          discount_authorized_by: string | null
+          discount_reason: string | null
           folio: string
           id: string
+          is_courtesy: boolean
           kds_status: string | null
           payment_details: Json | null
           payment_id: string | null
@@ -573,8 +577,12 @@ export type Database = {
           change_amount?: number | null
           created_at?: string | null
           customer_id?: string | null
+          discount?: number
+          discount_authorized_by?: string | null
+          discount_reason?: string | null
           folio?: string
           id?: string
+          is_courtesy?: boolean
           kds_status?: string | null
           payment_details?: Json | null
           payment_id?: string | null
@@ -595,8 +603,12 @@ export type Database = {
           change_amount?: number | null
           created_at?: string | null
           customer_id?: string | null
+          discount?: number
+          discount_authorized_by?: string | null
+          discount_reason?: string | null
           folio?: string
           id?: string
+          is_courtesy?: boolean
           kds_status?: string | null
           payment_details?: Json | null
           payment_id?: string | null

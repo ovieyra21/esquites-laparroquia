@@ -1,7 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState, useEffect, useRef, useCallback } from "react";
-import { Search, Trash2, Plus, Minus, X, Loader2, PanelLeftClose, PanelLeft } from "lucide-react";
+import { Search, Trash2, Plus, Minus, X, Loader2, PanelLeftClose, PanelLeft, Gift } from "lucide-react";
 import { useUI } from "@/store/ui";
+import { useAuth, hasRole } from "@/hooks/use-auth";
+import { DiscountDialog } from "@/components/DiscountDialog";
+
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
@@ -45,8 +48,13 @@ function POSPage() {
   const [pendingDigitalSale, setPendingDigitalSale] = useState<any>(null);
   const [terminalOpen, setTerminalOpen] = useState(false);
   const [pendingTerminalSale, setPendingTerminalSale] = useState<any>(null);
+  const [discountOpen, setDiscountOpen] = useState(false);
+
+  const { roles } = useAuth();
+  const isAdmin = hasRole(roles, "admin");
 
   const cart = useCart();
+
   const addSale = useSales((s) => s.addSale);
   const totals = calcTotals(cart.items, cart.discount, cart.taxRate);
 
@@ -189,6 +197,9 @@ function POSPage() {
         total: totals.total,
         paymentMethod: "tarjeta" as PaymentMethod,
         customerId: cart.customerId || undefined,
+        discount: cart.discount,
+        discountReason: cart.discountReason,
+        isCourtesy: cart.isCourtesy,
         items: cart.items.map(i => ({
           productId: i.product.id,
           productName: i.product.name,
@@ -217,6 +228,9 @@ function POSPage() {
         total: totals.total,
         paymentMethod: method,
         customerId: cart.customerId || undefined,
+        discount: cart.discount,
+        discountReason: cart.discountReason,
+        isCourtesy: cart.isCourtesy,
         items: cart.items.map(i => ({
           productId: i.product.id,
           productName: i.product.name,
@@ -248,6 +262,9 @@ function POSPage() {
         cashReceived: received,
         changeAmount: change,
         customerId: cart.customerId || undefined,
+        discount: cart.discount,
+        discountReason: cart.discountReason,
+        isCourtesy: cart.isCourtesy,
         items: cart.items.map(i => ({
           productId: i.product.id,
           productName: i.product.name,
@@ -483,8 +500,31 @@ function POSPage() {
 
         <div className="p-4 border-t border-border space-y-2">
           <Row label="Subtotal" value={fmt(totals.subtotal)} />
-          <Row label="Descuento" value={fmt(cart.discount)} muted />
+          <div className="flex justify-between items-center text-sm">
+            <span className="text-muted-foreground flex items-center gap-1">
+              Descuento
+              {cart.isCourtesy && <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-gold/20 text-gold font-bold">Cortesía</span>}
+            </span>
+            <div className="flex items-center gap-2">
+              <span className={cart.discount > 0 ? "text-success font-semibold" : "text-muted-foreground"}>
+                {cart.discount > 0 ? `- ${fmt(cart.discount)}` : fmt(0)}
+              </span>
+              {isAdmin && cart.items.length > 0 && (
+                <button
+                  onClick={() => setDiscountOpen(true)}
+                  title="Aplicar descuento o cortesía"
+                  className="size-7 rounded-lg bg-surface-2 hover:bg-gold/10 hover:text-gold flex items-center justify-center text-muted-foreground"
+                >
+                  <Gift className="size-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
+          {cart.discount > 0 && cart.discountReason && (
+            <div className="text-[11px] text-muted-foreground italic pl-1">Motivo: {cart.discountReason}</div>
+          )}
           <Row label={`Impuestos (${cart.taxRate}%)`} value={fmt(totals.tax)} muted />
+
           <div className="flex justify-between items-center pt-2 border-t border-border">
             <span className="text-sm text-muted-foreground">TOTAL</span>
             <span className="font-display text-3xl font-bold gold-text">{fmt(totals.total)}</span>
@@ -628,6 +668,15 @@ function POSPage() {
         open={!!lastSale}
         onOpenChange={(b) => !b && setLastSale(null)}
       />
+      <DiscountDialog
+        open={discountOpen}
+        onOpenChange={setDiscountOpen}
+        subtotal={totals.subtotal}
+        currentDiscount={cart.discount}
+        onApply={(discount, reason, isCourtesy) => cart.setDiscount(discount, reason, isCourtesy)}
+        onClear={() => cart.clearDiscount()}
+      />
+
     </div>
   );
 }

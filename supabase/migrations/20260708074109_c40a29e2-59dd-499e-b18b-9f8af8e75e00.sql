@@ -1,0 +1,5 @@
+ALTER TABLE public.sales
+  ADD COLUMN IF NOT EXISTS discount NUMERIC NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS discount_reason TEXT,
+  ADD COLUMN IF NOT EXISTS is_courtesy BOOLEAN NOT NULL DEFAULT false,
+  ADD COLUMN IF NOT EXISTS discount_authorized_by UUID REFERENCES auth.users(id);

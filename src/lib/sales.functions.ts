@@ -12,6 +12,9 @@ const saveSaleInput = z.object({
   cashReceived: z.number().optional(),
   changeAmount: z.number().optional(),
   customerId: z.string().uuid().optional(),
+  discount: z.number().optional(),
+  discountReason: z.string().optional(),
+  isCourtesy: z.boolean().optional(),
   items: z.array(z.object({
     productId: z.string().uuid(),
     productName: z.string(),
@@ -30,6 +33,15 @@ export const saveSale = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => saveSaleInput.parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+
+    // Authorize discount/courtesy: only admins may apply either.
+    const discountAmount = Number(data.discount ?? 0);
+    const isCourtesy = !!data.isCourtesy;
+    if (discountAmount > 0 || isCourtesy) {
+      const { data: isAdmin } = await (supabase as any)
+        .rpc("has_role", { _user_id: userId, _role: "admin" });
+      if (!isAdmin) throw new Error("Solo administradores pueden aplicar descuentos o cortesías.");
+    }
 
     // 1. Get current register
     const { data: reg } = await supabase
@@ -55,12 +67,17 @@ export const saveSale = createServerFn({ method: "POST" })
         cash_received: data.cashReceived,
         change_amount: data.changeAmount,
         customer_id: data.customerId,
+        discount: discountAmount,
+        discount_reason: data.discountReason || null,
+        is_courtesy: isCourtesy,
+        discount_authorized_by: (discountAmount > 0 || isCourtesy) ? userId : null,
         status: "completada"
       } as any)
       .select()
       .single();
 
     if (saleError) throw new Error(saleError.message);
+
 
     // --- LOYALTY POINTS LOGIC ---
     if (data.customerId) {
