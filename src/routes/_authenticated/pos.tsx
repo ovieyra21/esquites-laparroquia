@@ -48,8 +48,13 @@ function POSPage() {
   const [pendingDigitalSale, setPendingDigitalSale] = useState<any>(null);
   const [terminalOpen, setTerminalOpen] = useState(false);
   const [pendingTerminalSale, setPendingTerminalSale] = useState<any>(null);
+  const [discountOpen, setDiscountOpen] = useState(false);
+
+  const { roles } = useAuth();
+  const isAdmin = hasRole(roles, "admin");
 
   const cart = useCart();
+
   const addSale = useSales((s) => s.addSale);
   const totals = calcTotals(cart.items, cart.discount, cart.taxRate);
 
