@@ -1,7 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState, useEffect, useRef, useCallback } from "react";
-import { Search, Trash2, Plus, Minus, X, Loader2, PanelLeftClose, PanelLeft } from "lucide-react";
+import { Search, Trash2, Plus, Minus, X, Loader2, PanelLeftClose, PanelLeft, Gift } from "lucide-react";
 import { useUI } from "@/store/ui";
+import { useAuth, hasRole } from "@/hooks/use-auth";
+import { DiscountDialog } from "@/components/DiscountDialog";
+
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
