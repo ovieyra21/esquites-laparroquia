@@ -10,8 +10,11 @@ function publicClient() {
 
 export const getPublicCatalog = createServerFn({ method: "GET" }).handler(async () => {
   const supabase = publicClient();
+  // Categories are fetched via service role (no anon SELECT policy) to keep the
+  // table locked down; only safe columns are surfaced here.
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const [{ data: categories }, { data: products }] = await Promise.all([
-    supabase.from("categories").select("id, name, icon").order("name"),
+    supabaseAdmin.from("categories").select("id, name, icon").order("name"),
     supabase
       .from("products")
       .select("id, name, description, price, emoji, includes, image_url, category_id, display_order, active")
