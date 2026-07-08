@@ -197,6 +197,9 @@ function POSPage() {
         total: totals.total,
         paymentMethod: "tarjeta" as PaymentMethod,
         customerId: cart.customerId || undefined,
+        discount: cart.discount,
+        discountReason: cart.discountReason,
+        isCourtesy: cart.isCourtesy,
         items: cart.items.map(i => ({
           productId: i.product.id,
           productName: i.product.name,
@@ -225,6 +228,9 @@ function POSPage() {
         total: totals.total,
         paymentMethod: method,
         customerId: cart.customerId || undefined,
+        discount: cart.discount,
+        discountReason: cart.discountReason,
+        isCourtesy: cart.isCourtesy,
         items: cart.items.map(i => ({
           productId: i.product.id,
           productName: i.product.name,
@@ -256,6 +262,9 @@ function POSPage() {
         cashReceived: received,
         changeAmount: change,
         customerId: cart.customerId || undefined,
+        discount: cart.discount,
+        discountReason: cart.discountReason,
+        isCourtesy: cart.isCourtesy,
         items: cart.items.map(i => ({
           productId: i.product.id,
           productName: i.product.name,
