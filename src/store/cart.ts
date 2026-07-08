@@ -12,12 +12,15 @@ export type CartItem = {
 type CartState = {
   items: CartItem[];
   discount: number;
+  discountReason: string;
+  isCourtesy: boolean;
   taxRate: number;
   customerId: string | null;
   addItem: (p: Product, modifiers: CartItem["modifiers"]) => void;
   removeItem: (uid: string) => void;
   setQty: (uid: string, qty: number) => void;
-  setDiscount: (n: number) => void;
+  setDiscount: (n: number, reason?: string, isCourtesy?: boolean) => void;
+  clearDiscount: () => void;
   setTaxRate: (n: number) => void;
   setCustomerId: (id: string | null) => void;
   clear: () => void;
@@ -31,6 +34,8 @@ const uid = () =>
 export const useCart = create<CartState>((set) => ({
   items: [],
   discount: 0,
+  discountReason: "",
+  isCourtesy: false,
   taxRate: 0,
   customerId: null,
   addItem: (product, modifiers) =>
@@ -49,11 +54,14 @@ export const useCart = create<CartState>((set) => ({
   removeItem: (uid) => set((s) => ({ items: s.items.filter((i) => i.uid !== uid) })),
   setQty: (uid, qty) =>
     set((s) => ({ items: s.items.map((i) => (i.uid === uid ? { ...i, quantity: Math.max(1, qty) } : i)) })),
-  setDiscount: (n) => set({ discount: Math.max(0, n) }),
+  setDiscount: (n, reason = "", isCourtesy = false) =>
+    set({ discount: Math.max(0, n), discountReason: reason, isCourtesy }),
+  clearDiscount: () => set({ discount: 0, discountReason: "", isCourtesy: false }),
   setTaxRate: (n) => set({ taxRate: Math.max(0, n) }),
   setCustomerId: (id) => set({ customerId: id }),
-  clear: () => set({ items: [], discount: 0, customerId: null }),
+  clear: () => set({ items: [], discount: 0, discountReason: "", isCourtesy: false, customerId: null }),
 }));
+
 
 export const calcTotals = (items: CartItem[], discount: number, taxRate: number) => {
   const subtotal = items.reduce((acc, i) => acc + i.unitPrice * i.quantity, 0);
