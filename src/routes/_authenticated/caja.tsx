@@ -65,7 +65,9 @@ async function printCorteSmart(registerId: string, navigate: (o: { to: string })
     ]);
     const mode = await smartPrintCorte(detail as any, ps as any);
     if (mode === "browser") navigate({ to: `/corte/${registerId}` });
-  } catch {
+  } catch (e: any) {
+    console.error("[printCorteSmart]", e);
+    toast.error(`No se pudo imprimir el corte: ${e?.message ?? "error desconocido"}. Abriendo vista por navegador.`);
     navigate({ to: `/corte/${registerId}` });
   }
 }
