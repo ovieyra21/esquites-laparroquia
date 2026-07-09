@@ -15,6 +15,7 @@ const saveSaleInput = z.object({
   discount: z.number().optional(),
   discountReason: z.string().optional(),
   isCourtesy: z.boolean().optional(),
+  kitchenNotes: z.string().max(300).optional(),
   items: z.array(z.object({
     productId: z.string().uuid(),
     productName: z.string(),
