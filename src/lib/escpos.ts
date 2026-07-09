@@ -133,12 +133,37 @@ export function buildTicketBytes(data: TicketPrintData, settings: PrintSettings)
     b.row(`${it.quantity}x ${it.name}`, `$${(it.unitPrice * it.quantity).toFixed(2)}`);
     for (const m of it.modifiers) if (m) b.line("  + " + m);
   }
+
+  // Notas para cocina (si existen) — se resaltan en el ticket también, útiles como respaldo.
+  if (data.kitchenNotes && data.kitchenNotes.trim()) {
+    b.divider().bold(true).line("NOTAS COCINA:").bold(false);
+    const notes = data.kitchenNotes.trim();
+    // Wrap simple por ancho de columna
+    const width = settings.printer_width === 58 ? 32 : 48;
+    for (let i = 0; i < notes.length; i += width) b.line(notes.slice(i, i + width));
+  }
+
   b.divider()
-    .row("Subtotal", `$${data.subtotal.toFixed(2)}`)
-    .row("Impuestos", `$${data.tax.toFixed(2)}`);
+    .row("Subtotal", `$${data.subtotal.toFixed(2)}`);
+  if (data.discount && data.discount > 0) {
+    b.row("Descuento", `-$${data.discount.toFixed(2)}`);
+    if (data.discountReason) {
+      const width = settings.printer_width === 58 ? 32 : 48;
+      const reason = `Motivo: ${data.discountReason}`;
+      for (let i = 0; i < reason.length; i += width) b.line(reason.slice(i, i + width));
+    }
+  }
+  b.row("Impuestos", `$${data.tax.toFixed(2)}`);
   b.bold(true).double(true)
     .row("TOTAL", `$${data.total.toFixed(2)}`)
     .double(false).bold(false);
+
+  if (data.isCourtesy) {
+    b.feed(1).align("center").bold(true).double(true)
+      .line("*** CORTESIA ***")
+      .double(false).bold(false).align("left");
+  }
+
   b.row("Pago:", (data.paymentMethod || "").toUpperCase());
   if (data.cashReceived != null) {
     b.row("Recibido", `$${data.cashReceived.toFixed(2)}`);
