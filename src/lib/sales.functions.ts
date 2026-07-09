@@ -72,6 +72,7 @@ export const saveSale = createServerFn({ method: "POST" })
         discount_reason: data.discountReason || null,
         is_courtesy: isCourtesy,
         discount_authorized_by: (discountAmount > 0 || isCourtesy) ? userId : null,
+        kitchen_notes: data.kitchenNotes?.trim() || null,
         status: "completada"
       } as any)
       .select()
