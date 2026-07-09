@@ -473,6 +473,20 @@ function POSPage() {
                 </button>
               </div>
             )}
+            <div>
+              <label className="text-[10px] uppercase tracking-wider text-muted-foreground flex items-center gap-1 mb-1">
+                <StickyNote className="size-3" /> Notas para cocina
+                <span className="ml-auto opacity-60">{cart.kitchenNotes.length}/200</span>
+              </label>
+              <Textarea
+                value={cart.kitchenNotes}
+                onChange={(e) => cart.setKitchenNotes(e.target.value)}
+                placeholder="Ej: sin crema, bien dorado, para llevar..."
+                rows={2}
+                maxLength={200}
+                className="text-xs bg-surface-2 resize-none"
+              />
+            </div>
           </div>
         </div>
 
