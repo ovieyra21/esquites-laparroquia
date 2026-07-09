@@ -15,6 +15,7 @@ const saveSaleInput = z.object({
   discount: z.number().optional(),
   discountReason: z.string().optional(),
   isCourtesy: z.boolean().optional(),
+  kitchenNotes: z.string().max(300).optional(),
   items: z.array(z.object({
     productId: z.string().uuid(),
     productName: z.string(),
@@ -71,6 +72,7 @@ export const saveSale = createServerFn({ method: "POST" })
         discount_reason: data.discountReason || null,
         is_courtesy: isCourtesy,
         discount_authorized_by: (discountAmount > 0 || isCourtesy) ? userId : null,
+        kitchen_notes: data.kitchenNotes?.trim() || null,
         status: "completada"
       } as any)
       .select()
@@ -198,6 +200,10 @@ export const getSaleForTicket = createServerFn({ method: "GET" })
       subtotal: Number(sale.subtotal),
       tax: Number(sale.tax ?? 0),
       total: Number(sale.total),
+      discount: Number((sale as any).discount ?? 0),
+      discountReason: (sale as any).discount_reason ?? null,
+      isCourtesy: !!(sale as any).is_courtesy,
+      kitchenNotes: (sale as any).kitchen_notes ?? null,
       paymentMethod: sale.payment_method ?? "efectivo",
       cashReceived: sale.cash_received != null ? Number(sale.cash_received) : null,
       changeAmount: sale.change_amount != null ? Number(sale.change_amount) : null,
@@ -226,5 +232,41 @@ export const updateKdsStatus = createServerFn({ method: "POST" })
       .update({ kds_status: data.status })
       .eq("id", data.saleId);
     if (error) throw error;
+    return { success: true };
+  });
+
+const updateItemKdsInput = z.object({
+  itemId: z.string().uuid(),
+  status: z.enum(["pendiente", "listo"]),
+});
+export const updateSaleItemKdsStatus = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => updateItemKdsInput.parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { data: item, error: itemErr } = await (supabase as any)
+      .from("sale_items")
+      .update({ kds_item_status: data.status })
+      .eq("id", data.itemId)
+      .select("sale_id")
+      .single();
+    if (itemErr) throw itemErr;
+
+    // Si todos los ítems de la venta están listos, marcamos la orden completa como lista.
+    // Si al menos uno está en preparación (listo pero la orden estaba pendiente), la avanzamos a preparando.
+    if (item?.sale_id) {
+      const { data: siblings } = await (supabase as any)
+        .from("sale_items")
+        .select("kds_item_status")
+        .eq("sale_id", item.sale_id);
+      const all = (siblings ?? []).map((s: any) => s.kds_item_status);
+      const allReady = all.length > 0 && all.every((s: string) => s === "listo");
+      const anyReady = all.some((s: string) => s === "listo");
+      const nextStatus = allReady ? "listo" : anyReady ? "preparando" : "pendiente";
+      await (supabase as any)
+        .from("sales")
+        .update({ kds_status: nextStatus })
+        .eq("id", item.sale_id);
+    }
     return { success: true };
   });

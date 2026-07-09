@@ -17,6 +17,10 @@ export type Sale = {
   change?: number;
   cancelled?: boolean;
   isBuffered?: boolean;
+  discount?: number;
+  discountReason?: string;
+  isCourtesy?: boolean;
+  kitchenNotes?: string;
 };
 
 type SalesState = {

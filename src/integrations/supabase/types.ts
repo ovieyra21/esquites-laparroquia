@@ -493,6 +493,7 @@ export type Database = {
       sale_items: {
         Row: {
           id: string
+          kds_item_status: string
           product_emoji: string | null
           product_id: string | null
           product_name: string | null
@@ -504,6 +505,7 @@ export type Database = {
         }
         Insert: {
           id?: string
+          kds_item_status?: string
           product_emoji?: string | null
           product_id?: string | null
           product_name?: string | null
@@ -515,6 +517,7 @@ export type Database = {
         }
         Update: {
           id?: string
+          kds_item_status?: string
           product_emoji?: string | null
           product_id?: string | null
           product_name?: string | null
@@ -558,6 +561,7 @@ export type Database = {
           id: string
           is_courtesy: boolean
           kds_status: string | null
+          kitchen_notes: string | null
           payment_details: Json | null
           payment_id: string | null
           payment_method: string | null
@@ -584,6 +588,7 @@ export type Database = {
           id?: string
           is_courtesy?: boolean
           kds_status?: string | null
+          kitchen_notes?: string | null
           payment_details?: Json | null
           payment_id?: string | null
           payment_method?: string | null
@@ -610,6 +615,7 @@ export type Database = {
           id?: string
           is_courtesy?: boolean
           kds_status?: string | null
+          kitchen_notes?: string | null
           payment_details?: Json | null
           payment_id?: string | null
           payment_method?: string | null

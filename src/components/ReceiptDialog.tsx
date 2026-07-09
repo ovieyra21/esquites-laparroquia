@@ -38,6 +38,10 @@ export function ReceiptDialog({
       paymentMethod: sale.payment,
       cashReceived: sale.received ?? null,
       changeAmount: sale.change ?? null,
+      discount: sale.discount ?? null,
+      discountReason: sale.discountReason ?? null,
+      isCourtesy: sale.isCourtesy ?? null,
+      kitchenNotes: sale.kitchenNotes ?? null,
       items: sale.items.map((i) => ({
         name: i.product.name,
         quantity: i.quantity,

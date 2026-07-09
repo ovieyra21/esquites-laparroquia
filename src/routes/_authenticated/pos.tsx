@@ -1,11 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState, useEffect, useRef, useCallback } from "react";
-import { Search, Trash2, Plus, Minus, X, Loader2, PanelLeftClose, PanelLeft, Gift } from "lucide-react";
+import { Search, Trash2, Plus, Minus, X, Loader2, PanelLeftClose, PanelLeft, Gift, StickyNote } from "lucide-react";
 import { useUI } from "@/store/ui";
 import { useAuth, hasRole } from "@/hooks/use-auth";
 import { DiscountDialog } from "@/components/DiscountDialog";
 
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { listCategories, listProducts } from "@/lib/products.functions";
@@ -200,6 +201,7 @@ function POSPage() {
         discount: cart.discount,
         discountReason: cart.discountReason,
         isCourtesy: cart.isCourtesy,
+        kitchenNotes: cart.kitchenNotes || undefined,
         items: cart.items.map(i => ({
           productId: i.product.id,
           productName: i.product.name,
@@ -231,6 +233,7 @@ function POSPage() {
         discount: cart.discount,
         discountReason: cart.discountReason,
         isCourtesy: cart.isCourtesy,
+        kitchenNotes: cart.kitchenNotes || undefined,
         items: cart.items.map(i => ({
           productId: i.product.id,
           productName: i.product.name,
@@ -265,6 +268,7 @@ function POSPage() {
         discount: cart.discount,
         discountReason: cart.discountReason,
         isCourtesy: cart.isCourtesy,
+        kitchenNotes: cart.kitchenNotes || undefined,
         items: cart.items.map(i => ({
           productId: i.product.id,
           productName: i.product.name,
@@ -281,7 +285,6 @@ function POSPage() {
       let autoPrint = false;
 
       if (!navigator.onLine) {
-        // Offline Buffering
         const buffer = JSON.parse(localStorage.getItem("buffered_sales") || "[]");
         saleId = `offline-${crypto.randomUUID()}`;
         buffer.push({ ...saleData, id: saleId, createdAt: new Date().toISOString() });
@@ -305,12 +308,21 @@ function POSPage() {
         payment: method,
         received,
         change,
-        isBuffered: !navigator.onLine
+        isBuffered: !navigator.onLine,
+        discount: cart.discount,
+        discountReason: cart.discountReason,
+        isCourtesy: cart.isCourtesy,
+        kitchenNotes: cart.kitchenNotes,
       };
 
       addSale(completedSale);
       setLastSale(completedSale);
       setCheckoutOpen(false);
+      const snapshotNotes = cart.kitchenNotes;
+      const snapshotDiscount = cart.discount;
+      const snapshotDiscountReason = cart.discountReason;
+      const snapshotIsCourtesy = cart.isCourtesy;
+      const snapshotItems = cart.items;
       cart.clear();
       playSaleSound();
 
@@ -325,7 +337,11 @@ function POSPage() {
           paymentMethod: method,
           cashReceived: received,
           changeAmount: change,
-          items: cart.items.map(i => ({
+          discount: snapshotDiscount,
+          discountReason: snapshotDiscountReason,
+          isCourtesy: snapshotIsCourtesy,
+          kitchenNotes: snapshotNotes,
+          items: snapshotItems.map(i => ({
             name: i.product.name,
             quantity: i.quantity,
             unitPrice: i.unitPrice,
@@ -457,6 +473,20 @@ function POSPage() {
                 </button>
               </div>
             )}
+            <div>
+              <label className="text-[10px] uppercase tracking-wider text-muted-foreground flex items-center gap-1 mb-1">
+                <StickyNote className="size-3" /> Notas para cocina
+                <span className="ml-auto opacity-60">{cart.kitchenNotes.length}/200</span>
+              </label>
+              <Textarea
+                value={cart.kitchenNotes}
+                onChange={(e) => cart.setKitchenNotes(e.target.value)}
+                placeholder="Ej: sin crema, bien dorado, para llevar..."
+                rows={2}
+                maxLength={200}
+                className="text-xs bg-surface-2 resize-none"
+              />
+            </div>
           </div>
         </div>
 

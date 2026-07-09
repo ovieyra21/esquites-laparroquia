@@ -16,6 +16,10 @@ export type TicketPrintData = {
   paymentMethod: string;
   cashReceived?: number | null;
   changeAmount?: number | null;
+  discount?: number | null;
+  discountReason?: string | null;
+  isCourtesy?: boolean | null;
+  kitchenNotes?: string | null;
   items: { name: string; quantity: number; unitPrice: number; modifiers: string[] }[];
 };
 
@@ -66,6 +70,22 @@ export function printTicketBrowser(data: TicketPrintData) {
     <div class="tr-row"><span>Recibido</span><span>${fmtTicket(data.cashReceived)}</span></div>
     <div class="tr-row"><span>Cambio</span><span>${fmtTicket(data.changeAmount ?? 0)}</span></div>`
       : "";
+
+  const discountHtml = (data.discount && data.discount > 0)
+    ? `<div class="tr-row" style="color:#059669;font-weight:700"><span>Descuento</span><span>- ${fmtTicket(data.discount)}</span></div>
+       ${data.discountReason ? `<div class="tr-row" style="font-style:italic;opacity:0.75"><span>Motivo:</span><span>${escapeHtml(data.discountReason)}</span></div>` : ""}`
+    : "";
+
+  const courtesyHtml = data.isCourtesy
+    ? `<div style="text-align:center;font-weight:900;letter-spacing:2px;padding:4px 0;border:1px dashed #000;margin:4px 0;">*** CORTESÍA ***</div>`
+    : "";
+
+  const notesHtml = data.kitchenNotes
+    ? `<div style="border:1px dashed #999;padding:3px 6px;margin:4px 0;font-size:10px;">
+         <div style="font-weight:700;text-transform:uppercase;font-size:8px;">Notas cocina:</div>
+         <div>${escapeHtml(data.kitchenNotes)}</div>
+       </div>`
+    : "";
 
   // Use logo URL directly (Vite resolves it at build time). On first print,
   // a small inline script in the overlay will fetch & data-uri it if needed.
@@ -218,12 +238,15 @@ export function printTicketBrowser(data: TicketPrintData) {
         <div class="ti-row"><span>Cajero:</span><span>${escapeHtml(data.cashier)}</span></div>
         <div class="ticket-divider"></div>
         ${itemsHtml}
+        ${notesHtml}
         <div class="ticket-divider"></div>
         <div class="tr-row"><span>Subtotal</span><span>${fmtTicket(data.subtotal)}</span></div>
+        ${discountHtml}
         <div class="tr-row"><span>Impuestos</span><span>${fmtTicket(data.tax)}</span></div>
         <div class="ticket-divider-double"></div>
         <div class="ticket-total"><span>TOTAL</span><span>${fmtTicket(data.total)}</span></div>
         <div class="ticket-divider-double"></div>
+        ${courtesyHtml}
         <div class="tr-row"><span>Pago:</span><span style="text-transform:uppercase;font-weight:600">${escapeHtml(data.paymentMethod)}</span></div>
         ${cashHtml}
         <div class="ticket-divider"></div>
