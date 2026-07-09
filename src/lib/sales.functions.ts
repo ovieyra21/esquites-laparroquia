@@ -234,3 +234,39 @@ export const updateKdsStatus = createServerFn({ method: "POST" })
     if (error) throw error;
     return { success: true };
   });
+
+const updateItemKdsInput = z.object({
+  itemId: z.string().uuid(),
+  status: z.enum(["pendiente", "listo"]),
+});
+export const updateSaleItemKdsStatus = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => updateItemKdsInput.parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { data: item, error: itemErr } = await (supabase as any)
+      .from("sale_items")
+      .update({ kds_item_status: data.status })
+      .eq("id", data.itemId)
+      .select("sale_id")
+      .single();
+    if (itemErr) throw itemErr;
+
+    // Si todos los ítems de la venta están listos, marcamos la orden completa como lista.
+    // Si al menos uno está en preparación (listo pero la orden estaba pendiente), la avanzamos a preparando.
+    if (item?.sale_id) {
+      const { data: siblings } = await (supabase as any)
+        .from("sale_items")
+        .select("kds_item_status")
+        .eq("sale_id", item.sale_id);
+      const all = (siblings ?? []).map((s: any) => s.kds_item_status);
+      const allReady = all.length > 0 && all.every((s: string) => s === "listo");
+      const anyReady = all.some((s: string) => s === "listo");
+      const nextStatus = allReady ? "listo" : anyReady ? "preparando" : "pendiente";
+      await (supabase as any)
+        .from("sales")
+        .update({ kds_status: nextStatus })
+        .eq("id", item.sale_id);
+    }
+    return { success: true };
+  });
