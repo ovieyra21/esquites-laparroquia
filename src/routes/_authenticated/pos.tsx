@@ -200,6 +200,7 @@ function POSPage() {
         discount: cart.discount,
         discountReason: cart.discountReason,
         isCourtesy: cart.isCourtesy,
+        kitchenNotes: cart.kitchenNotes || undefined,
         items: cart.items.map(i => ({
           productId: i.product.id,
           productName: i.product.name,
@@ -231,6 +232,7 @@ function POSPage() {
         discount: cart.discount,
         discountReason: cart.discountReason,
         isCourtesy: cart.isCourtesy,
+        kitchenNotes: cart.kitchenNotes || undefined,
         items: cart.items.map(i => ({
           productId: i.product.id,
           productName: i.product.name,
@@ -265,6 +267,7 @@ function POSPage() {
         discount: cart.discount,
         discountReason: cart.discountReason,
         isCourtesy: cart.isCourtesy,
+        kitchenNotes: cart.kitchenNotes || undefined,
         items: cart.items.map(i => ({
           productId: i.product.id,
           productName: i.product.name,
@@ -281,7 +284,6 @@ function POSPage() {
       let autoPrint = false;
 
       if (!navigator.onLine) {
-        // Offline Buffering
         const buffer = JSON.parse(localStorage.getItem("buffered_sales") || "[]");
         saleId = `offline-${crypto.randomUUID()}`;
         buffer.push({ ...saleData, id: saleId, createdAt: new Date().toISOString() });
@@ -305,12 +307,21 @@ function POSPage() {
         payment: method,
         received,
         change,
-        isBuffered: !navigator.onLine
+        isBuffered: !navigator.onLine,
+        discount: cart.discount,
+        discountReason: cart.discountReason,
+        isCourtesy: cart.isCourtesy,
+        kitchenNotes: cart.kitchenNotes,
       };
 
       addSale(completedSale);
       setLastSale(completedSale);
       setCheckoutOpen(false);
+      const snapshotNotes = cart.kitchenNotes;
+      const snapshotDiscount = cart.discount;
+      const snapshotDiscountReason = cart.discountReason;
+      const snapshotIsCourtesy = cart.isCourtesy;
+      const snapshotItems = cart.items;
       cart.clear();
       playSaleSound();
 
@@ -325,7 +336,11 @@ function POSPage() {
           paymentMethod: method,
           cashReceived: received,
           changeAmount: change,
-          items: cart.items.map(i => ({
+          discount: snapshotDiscount,
+          discountReason: snapshotDiscountReason,
+          isCourtesy: snapshotIsCourtesy,
+          kitchenNotes: snapshotNotes,
+          items: snapshotItems.map(i => ({
             name: i.product.name,
             quantity: i.quantity,
             unitPrice: i.unitPrice,
