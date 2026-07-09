@@ -1,44 +1,57 @@
-# Impresión térmica confiable vía Proxy ESC/POS local
+## 1. Notas de preparación (kitchen_notes)
 
-## Diagnóstico confirmado
+**Base de datos** — migración: `ALTER TABLE public.sales ADD COLUMN kitchen_notes text;`.
 
-1. **La tablet usa el camino equivocado**: el POS, el `ReceiptDialog` y el corte de caja llaman `printTicketBrowser()` / `printCorteBrowser()` (HTML + `window.print()`). El driver de la tablet rasteriza ese HTML con su propia codepage → acentos rotos ("Acámbaro" → "Acßmbaro") y texto pegado (flexbox no respeta el ancho real del rollo). El ticket de tu foto coincide 100% con esta firma.
-2. **El camino ESC/POS del servidor está bien construido pero es inalcanzable en producción**: `printSaleTicket` corre en la nube y no puede abrir una conexión TCP hacia `192.168.1.101` (IP privada de tu red local). Solo funcionaba en pruebas locales. Por eso "cambiar la tablet al server function" no basta.
-3. **La solución correcta es el proxy que adjuntaste**: un mini-servidor Node en tu red recibe los bytes ESC/POS por HTTP y los reenvía por TCP a la impresora. El navegador de la tablet SÍ está en la misma red, así que puede hablar con el proxy directamente.
+**POS (`src/routes/_authenticated/pos.tsx` + `src/store/cart.ts`)**
+- Añadir estado `kitchenNotes` al store del carrito con setter y limpieza al finalizar venta.
+- Agregar un botón/textarea "Notas para cocina" en la barra lateral del carrito (junto a descuento/cliente), máx 200 caracteres.
+- Pasar `kitchen_notes` a `saveSale`.
 
-## Qué voy a construir
+**Backend (`src/lib/sales.functions.ts`)**
+- Aceptar `kitchen_notes` en el validador de `saveSale` y guardarlo en la fila.
+- Incluirlo en el SELECT de KDS.
 
-### 1. Motor ESC/POS compartido (cliente)
-- Mover `TicketBuilder`, `toAscii()` y los constructores de bytes (`buildTicketBytes`, `buildCashCutBytes`) de `printer.functions.ts` a un módulo compartido `src/lib/escpos.ts` que corre en el navegador.
-- La tablet genera los bytes localmente (transliteración de acentos + alineación por columnas garantizada, que ya funcionan bien) y los envía al proxy — sin depender del driver del sistema.
+## 2. Monitor de cocina mejorado (`src/routes/_authenticated/cocina.tsx`)
 
-### 2. Proxy de impresión descargable
-- Crear los archivos del proxy en `public/proxy/`:
-  - `escpos-proxy.mjs` — servidor Node: `POST /` recibe bytes ESC/POS y los reenvía por TCP a la impresora; `GET /health` y `GET /panel` para verificar; ticket de prueba integrado.
-  - `start-proxy.bat` (Windows), `start-proxy-termux.sh` (Android/Termux) y la guía README que adjuntaste.
-- El proxy incluirá cabeceras CORS y de red privada (`Access-Control-Allow-Private-Network`) para que el navegador permita la conexión.
-- Sección en **Configuración → Impresora** con botones para descargar estos archivos y las instrucciones resumidas.
+**Vista expandida al tocar una orden**
+- Modal a pantalla completa con tipografía grande (legible desde 1–2 m): folio, cliente, tiempo, `kitchen_notes` destacadas en amarillo.
+- Lista de productos con **checkbox grande por producto** para marcar cada ítem como listo.
+- Al marcar el último ítem, la orden pasa automáticamente a `listo` y el modal se cierra.
+- Botones grandes al pie: "Iniciar preparación" / "Marcar todo listo" / "Cerrar".
 
-### 3. Configuración de impresión
-- Migración de base de datos: agregar a `settings` los campos `print_mode` (`proxy` | `navegador`) y `proxy_url` (default `http://localhost:3128`).
-- UI en Configuración para elegir el modo y la URL del proxy, con botón "Probar impresora" que ahora prueba vía proxy.
+**Estado por producto**
+- Nueva columna `sale_items.kds_item_status text default 'pendiente'` (`pendiente` | `listo`).
+- Server function `updateSaleItemKdsStatus({ itemId, status })` con RLS (cocinero/admin/supervisor).
+- Real-time ampliado a `sale_items`.
 
-### 4. Conectar los puntos de impresión
-- `pos.tsx` (3 llamadas), `ReceiptDialog` y el corte en `caja.tsx`: si `print_mode = proxy`, generar bytes ESC/POS y enviarlos al proxy; si falla o el modo es `navegador`, caer al overlay HTML como respaldo con aviso claro.
+**Menos toques**
+- Auto-avance a "Listo" al marcar el último ítem.
+- Modo "Iniciar al abrir": una orden pendiente pasa a "preparando" al abrirla (toggle en header, on por defecto).
+- Auto-archivo de "Listo" tras 5 min.
+- Wake Lock API para mantener la pantalla encendida.
+- Áreas de toque ≥56 px y swipe: derecha = avanzar estado, izquierda = deshacer.
 
-### 5. Corregir el camino HTML (respaldo/vista previa)
-- Aplicar `escapeHtml()` a `item.name` y a cada modificador en `printTicketBrowser` (hoy no se escapan, a diferencia de `printCorteBrowser`).
-- No se necesita `toAscii()` en el HTML de respaldo — se mantiene como vista previa en pantalla.
+## 3. Reparar impresión de corte de caja
 
-## Recomendación de instalación
+- Confirmar en runtime que `getPrintSettings()` en `caja.tsx` devuelve `print_mode: "proxy"` y `proxy_url` correctos.
+- Auditar `buildCashCutBytes` contra el shape real de `getCashCutDetail` (campos `sales_mixto`, movimientos, denominaciones) y corregir cualquier `undefined` que rompa la generación.
+- Reemplazar el `catch {}` silencioso de `printCorteSmart` en `caja.tsx` por `console.error` + `toast.error` con el mensaje real.
+- Verificar que "Imprimir corte" del historial y el flujo automático post-cierre usen ambos el mismo `printCorteSmart` corregido.
 
-**Corre el proxy en la misma tablet con Termux (Opción B de tu guía).** Razón técnica: la web POS se sirve por HTTPS, y los navegadores solo permiten llamadas HTTP inseguras hacia `localhost`. Si el proxy corre en otra PC de la red (`http://192.168.1.X:3128`), Chrome puede bloquear la conexión por "contenido mixto". Con el proxy en la tablet, `http://localhost:3128` funciona siempre.
+## 4. Descuentos en el ticket de venta
 
-Si prefieres correrlo en una PC/Raspberry, lo dejamos configurable y te explico cómo permitirlo en Chrome de la tablet (ajuste de sitio inseguro permitido).
+- Extender `TicketPrintData` en `src/lib/escpos.ts` (y su respaldo HTML en `src/lib/utils.ts`) con `discount`, `discountReason`, `isCourtesy`.
+- Renderizado ESC/POS: bajo el subtotal, si `discount > 0` o `isCourtesy`, agregar líneas:
+  - `Descuento .......... -$XX.XX`
+  - `Motivo: <razón>` (si existe, con wrap si es largo)
+  - Si `isCourtesy = true`: línea grande `*** CORTESÍA ***` centrada en negrita.
+- Mismo tratamiento en el HTML de respaldo (`printTicketBrowser`) con `escapeHtml`.
+- Actualizar los tres puntos que arman `TicketPrintData` (POS al cobrar, `ReceiptDialog`, reimpresión desde historial) para pasar los campos de descuento desde la venta guardada.
+- Añadir `discount`, `discount_reason`, `is_courtesy` al SELECT usado en la reimpresión desde historial si aún no están.
 
 ## Detalles técnicos
 
-- `src/lib/escpos.ts`: módulo puro TypeScript (sin dependencias de servidor) con los bytes crudos ya probados: `ESC @`, `ESC t 0` (PC437), `GS ! 0x11`, corte parcial `GS V 1`, cajón `ESC p`.
-- Envío al proxy: `fetch(proxyUrl, { method: "POST", body: bytes })` con timeout y manejo de error visible ("¿Está corriendo el proxy?").
-- Las server functions `printSaleTicket` / `printCashCutReceipt` / `testPrinter` se eliminan (transporte TCP inalcanzable desde la nube) — su lógica vive ahora en `escpos.ts`.
-- Migración: `ALTER TABLE settings ADD COLUMN print_mode text DEFAULT 'proxy', ADD COLUMN proxy_url text DEFAULT 'http://localhost:3128'`.
+- Migración única: `sales.kitchen_notes`, `sale_items.kds_item_status` + índice, y `ALTER PUBLICATION supabase_realtime ADD TABLE public.sale_items`. Las columnas nuevas heredan GRANTs.
+- Modal KDS: `Dialog` de shadcn `max-w-3xl` con `text-2xl`/`text-3xl`.
+- Wake Lock: `navigator.wakeLock.request('screen')` en `useEffect` con cleanup y fallback silencioso.
+- Swipe: handlers `pointerdown`/`pointerup` midiendo delta X (>80 px), sin dependencias nuevas.
