@@ -238,12 +238,15 @@ export function printTicketBrowser(data: TicketPrintData) {
         <div class="ti-row"><span>Cajero:</span><span>${escapeHtml(data.cashier)}</span></div>
         <div class="ticket-divider"></div>
         ${itemsHtml}
+        ${notesHtml}
         <div class="ticket-divider"></div>
         <div class="tr-row"><span>Subtotal</span><span>${fmtTicket(data.subtotal)}</span></div>
+        ${discountHtml}
         <div class="tr-row"><span>Impuestos</span><span>${fmtTicket(data.tax)}</span></div>
         <div class="ticket-divider-double"></div>
         <div class="ticket-total"><span>TOTAL</span><span>${fmtTicket(data.total)}</span></div>
         <div class="ticket-divider-double"></div>
+        ${courtesyHtml}
         <div class="tr-row"><span>Pago:</span><span style="text-transform:uppercase;font-weight:600">${escapeHtml(data.paymentMethod)}</span></div>
         ${cashHtml}
         <div class="ticket-divider"></div>
