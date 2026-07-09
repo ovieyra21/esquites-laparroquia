@@ -16,6 +16,7 @@ type CartState = {
   isCourtesy: boolean;
   taxRate: number;
   customerId: string | null;
+  kitchenNotes: string;
   addItem: (p: Product, modifiers: CartItem["modifiers"]) => void;
   removeItem: (uid: string) => void;
   setQty: (uid: string, qty: number) => void;
@@ -23,6 +24,7 @@ type CartState = {
   clearDiscount: () => void;
   setTaxRate: (n: number) => void;
   setCustomerId: (id: string | null) => void;
+  setKitchenNotes: (notes: string) => void;
   clear: () => void;
 };
 
