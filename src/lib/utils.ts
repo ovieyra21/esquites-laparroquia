@@ -16,6 +16,10 @@ export type TicketPrintData = {
   paymentMethod: string;
   cashReceived?: number | null;
   changeAmount?: number | null;
+  discount?: number | null;
+  discountReason?: string | null;
+  isCourtesy?: boolean | null;
+  kitchenNotes?: string | null;
   items: { name: string; quantity: number; unitPrice: number; modifiers: string[] }[];
 };
 
