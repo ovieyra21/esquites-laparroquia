@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Plus, Pencil, Trash2, Tag, Package, Loader2, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, Tag, Package, Loader2, Search, CookingPot } from "lucide-react";
+import { RecipeDialog } from "@/components/RecipeDialog";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -65,6 +66,7 @@ function ProductsPage() {
   const [editing, setEditing] = useState<typeof emptyProduct | null>(null);
   const [catDialog, setCatDialog] = useState<{ id?: string; name: string; icon: string } | null>(null);
   const [saving, setSaving] = useState(false);
+  const [recipeForProduct, setRecipeForProduct] = useState<{ id: string; name: string } | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -208,13 +210,16 @@ function ProductsPage() {
                   </div>
                   {p.description && <p className="text-sm text-muted-foreground line-clamp-2">{p.description}</p>}
                   <div className="font-display text-2xl gold-text">${Number(p.price).toFixed(2)}</div>
-                  <div className="flex items-center justify-between gap-2 pt-2 border-t border-border">
-                    <div className="flex items-center gap-2">
-                      <Switch checked={!!p.active} onCheckedChange={() => onToggle(p)} />
-                      <span className="text-xs text-muted-foreground">Visible</span>
-                    </div>
-                    <div className="flex gap-1">
-                      <Button size="icon" variant="ghost" onClick={() => setEditing({
+                    <div className="flex items-center justify-between gap-2 pt-2 border-t border-border">
+                        <div className="flex items-center gap-2">
+                            <Switch checked={!!p.active} onCheckedChange={() => onToggle(p)} />
+                            <span className="text-xs text-muted-foreground">Visible</span>
+                        </div>
+                        <div className="flex gap-1">
+                            <Button size="icon" variant="ghost" title="Receta (insumos)" onClick={() => setRecipeForProduct({ id: p.id, name: p.name })}>
+                                <CookingPot className="size-4 text-gold" />
+                            </Button>
+                            <Button size="icon" variant="ghost" onClick={() => setEditing({
                         id: p.id,
                         name: p.name,
                         description: p.description ?? "",
@@ -350,6 +355,12 @@ function ProductsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <RecipeDialog
+        productId={recipeForProduct?.id ?? null}
+        productName={recipeForProduct?.name ?? null}
+        onClose={() => setRecipeForProduct(null)}
+      />
     </div>
   );
 }

@@ -1,22 +1,12 @@
-import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
-import { supabase } from "@/integrations/supabase/client";
+// src/routes/_authenticated/route.tsx
+import { createFileRoute, Outlet } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
-  beforeLoad: async () => {
-    // getSession is safer for offline as it doesn't always hit the server
-    const { data } = await supabase.auth.getSession();
-    const user = data.session?.user;
-
-    if (!user) {
-      // If we are truly offline and have no session, we can't do much
-      // but let's try to not hang.
-      if (typeof navigator !== 'undefined' && !navigator.onLine) {
-        return { user: null, isOffline: true };
-      }
-      throw redirect({ to: "/auth" });
-    }
-    return { user };
+  beforeLoad: () => {
+    return { 
+      user: { id: 'local-user-1', email: 'admin@local.com' },
+    };
   },
   component: () => <Outlet />,
   pendingComponent: () => (

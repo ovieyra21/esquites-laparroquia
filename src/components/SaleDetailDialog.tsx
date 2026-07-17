@@ -61,6 +61,10 @@ export function SaleDetailDialog({
       paymentMethod: detail.payment_method,
       cashReceived: detail.cash_received,
       changeAmount: detail.change_amount,
+      discount: detail.discount,
+      discountReason: detail.discount_reason,
+      isCourtesy: detail.is_courtesy,
+      kitchenNotes: detail.kitchen_notes,
       items: detail.items.map((i) => ({
         name: i.product_name,
         quantity: i.quantity,
@@ -130,6 +134,13 @@ export function SaleDetailDialog({
               </div>
             </div>
 
+            {detail.kitchen_notes && (
+              <div className="bg-yellow-400/10 border border-yellow-400/30 rounded-xl p-3 text-sm">
+                <span className="text-[10px] font-bold text-yellow-500 uppercase tracking-wider">Notas cocina:</span>
+                <p className="text-foreground mt-0.5">{detail.kitchen_notes}</p>
+              </div>
+            )}
+
             {/* Items */}
             <div>
               <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
@@ -161,6 +172,23 @@ export function SaleDetailDialog({
               <div className="flex justify-between text-muted-foreground">
                 <span>Subtotal</span><span>{fmt(detail.subtotal)}</span>
               </div>
+              {detail.discount != null && detail.discount > 0 && (
+                <>
+                  <div className="flex justify-between text-success font-semibold">
+                    <span>Descuento</span><span>- {fmt(detail.discount)}</span>
+                  </div>
+                  {detail.discount_reason && (
+                    <div className="flex justify-between text-xs text-muted-foreground italic">
+                      <span>Motivo:</span><span>{detail.discount_reason}</span>
+                    </div>
+                  )}
+                </>
+              )}
+              {detail.is_courtesy && (
+                <div className="text-center font-black text-sm tracking-widest border border-dashed border-gold/40 rounded py-1 text-gold">
+                  *** CORTESÍA ***
+                </div>
+              )}
               <div className="flex justify-between text-muted-foreground">
                 <span>Impuestos</span><span>{fmt(detail.tax)}</span>
               </div>

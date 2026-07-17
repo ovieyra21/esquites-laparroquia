@@ -1,42 +1,11 @@
+// src/lib/settings.functions.ts
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { localApi } from "./api/api-client";
 
 export const getSettings = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    const { data } = await context.supabase.from("settings").select("*").limit(1).maybeSingle();
-    return data;
-  });
-
-export type PrintSettingsRow = {
-  business_name: string | null;
-  slogan: string | null;
-  address: string | null;
-  phone: string | null;
-  footer_message: string | null;
-  tax: number | null;
-  printer_enabled: boolean | null;
-  printer_ip: string | null;
-  printer_port: number | null;
-  printer_width: number | null;
-  auto_print: boolean | null;
-  auto_cut: boolean | null;
-  open_drawer: boolean | null;
-  show_logo: boolean | null;
-  print_mode: string | null;
-  proxy_url: string | null;
-};
-
-/** Datos de impresión accesibles para cualquier usuario autenticado (incl. cajeros).
- *  Usa la función SECURITY DEFINER `get_print_settings`, que solo expone campos no sensibles. */
-export const getPrintSettings = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    const { data, error } = await (context.supabase as any).rpc("get_print_settings");
-    if (error) throw new Error(error.message);
-    const row = Array.isArray(data) ? data[0] : data;
-    return (row ?? null) as PrintSettingsRow | null;
+  .handler(async () => {
+    return localApi.get('/api/settings');
   });
 
 const updateInput = z.object({
@@ -66,20 +35,12 @@ const updateInput = z.object({
 });
 
 export const updateSettings = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => updateInput.parse(d))
-  .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
-    const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: userId, _role: "admin" });
-    if (!isAdmin) throw new Error("Solo admin puede modificar configuración.");
-    const { data: existing } = await supabase.from("settings").select("id").limit(1).maybeSingle();
-    if (existing) {
-      const { error } = await supabase.from("settings").update(data as any).eq("id", existing.id);
-      if (error) throw new Error(error.message);
-    } else {
-      const { error } = await supabase.from("settings").insert(data as any);
+  .handler(async ({ data }) => {
+    return localApi.put('/api/settings', data);
+  });
 
-      if (error) throw new Error(error.message);
-    }
-    return { ok: true };
+export const getPrintSettings = createServerFn({ method: "GET" })
+  .handler(async () => {
+    return localApi.get('/api/settings');
   });

@@ -32,18 +32,21 @@ export function RecipeDialog({ productId, productName, onClose }: RecipeDialogPr
     const [localItems, setLocalItems] = useState<any[]>([]);
 
     useEffect(() => {
-        if (recipes) {
-            setLocalItems(recipes.map(r => ({
-                id: r.id,
-                inventory_item_id: r.inventory_item_id,
-                quantity: r.quantity,
-                name: (r as any).inventory_items?.name,
-                unit: (r as any).inventory_items?.unit
-            })));
+        if (recipes && inventoryItems) {
+            setLocalItems(recipes.map(r => {
+                const inv = inventoryItems.find(i => i.id === r.inventory_item_id);
+                return {
+                    id: r.id,
+                    inventory_item_id: r.inventory_item_id,
+                    quantity: r.quantity,
+                    name: inv?.name || r.inventory_item_id,
+                    unit: inv?.unit || ""
+                };
+            }));
         } else {
             setLocalItems([]);
         }
-    }, [recipes]);
+    }, [recipes, inventoryItems]);
 
     const addItem = () => {
         if (!inventoryItems?.length) return;

@@ -1,9 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { localApi } from "./api/api-client";
 
-const printInput = z.object({ saleId: z.string().uuid() });
-const printCashCutInput = z.object({ registerId: z.string().uuid() });
+const printInput = z.object({ saleId: z.string() });
+const printCashCutInput = z.object({ registerId: z.string() });
 
 type PrinterSettings = {
   business_name?: string | null;
@@ -19,26 +19,19 @@ type PrinterSettings = {
   open_drawer?: boolean | null;
 };
 
-// ─────────── ESC/POS helpers (raw bytes, no external library) ───────────
-// Using raw commands avoids issues with encoder libs mis-handling codepages
-// or the printer entering unknown states after image commands.
-
 const ESC = 0x1b;
 const GS = 0x1d;
 
-// Transliterate Latin accents → ASCII. This bypasses codepage mismatches on
-// generic 80mm WiFi thermal printers, which is the #1 cause of "Acámbaro"
-// coming out as "Acßmbaro" or similar mojibake.
 function toAscii(s: string): string {
   if (!s) return "";
   return s
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "") // strip diacritics
+    .replace(/[\u0300-\u036f]/g, "")
     .replace(/ñ/g, "n").replace(/Ñ/g, "N")
     .replace(/¡/g, "!").replace(/¿/g, "?")
     .replace(/[""]/g, '"').replace(/['']/g, "'")
     .replace(/–|—/g, "-")
-    .replace(/[^\x20-\x7E\n]/g, ""); // drop anything else non-printable ASCII
+    .replace(/[^\x20-\x7E\n]/g, "");
 }
 
 class TicketBuilder {
@@ -46,9 +39,8 @@ class TicketBuilder {
   private width: number;
   constructor(widthMm: number) {
     this.width = widthMm === 58 ? 32 : 48;
-    // Initialize + select codepage PC437 (USA, most compatible default)
-    this.chunks.push(ESC, 0x40); // ESC @ initialize
-    this.chunks.push(ESC, 0x74, 0x00); // ESC t 0 → PC437
+    this.chunks.push(ESC, 0x40);
+    this.chunks.push(ESC, 0x74, 0x00);
     this.align("left");
   }
   private push(...b: number[]) { this.chunks.push(...b); }
@@ -63,14 +55,12 @@ class TicketBuilder {
   }
   bold(on: boolean) { this.push(ESC, 0x45, on ? 1 : 0); return this; }
   double(on: boolean) {
-    // GS ! n — n=0x11 double height & width, n=0x00 normal
     this.push(GS, 0x21, on ? 0x11 : 0x00);
     return this;
   }
   line(s = "") { this.text(s); this.push(0x0a); return this; }
   feed(n = 1) { for (let i = 0; i < n; i++) this.push(0x0a); return this; }
   divider() { this.line("-".repeat(this.width)); return this; }
-  /** Two-column row: label left, value right, guaranteed at least 1 space between. */
   row(label: string, value: string) {
     const l = toAscii(label);
     const v = toAscii(value);
@@ -79,13 +69,11 @@ class TicketBuilder {
     return this;
   }
   cut() {
-    // Feed then partial cut. GS V m — m=1 partial cut
     this.feed(4);
     this.push(GS, 0x56, 0x01);
     return this;
   }
   drawer() {
-    // ESC p m t1 t2 — pulse pin 2
     this.push(ESC, 0x70, 0x00, 0x19, 0xfa);
     return this;
   }
@@ -111,7 +99,6 @@ function buildTicketBytes(opts: {
   const dateStr = date.toLocaleDateString("es-MX");
   const timeStr = date.toLocaleTimeString("es-MX", { hour12: false });
 
-  // Header — centered, business name double-size
   b.align("center").bold(true).double(true)
     .line(opts.settings.business_name ?? "Esquites La Parroquia")
     .double(false).bold(false);
@@ -120,7 +107,6 @@ function buildTicketBytes(opts: {
   if (opts.settings.phone) b.line("Tel: " + opts.settings.phone);
   b.feed(1);
 
-  // Meta — left aligned
   b.align("left").divider()
     .row("Folio:", String(opts.folio))
     .row("Fecha:", dateStr)
@@ -128,7 +114,6 @@ function buildTicketBytes(opts: {
     .row("Cajero:", opts.cashier)
     .divider();
 
-  // Items
   for (const it of opts.items) {
     const left = `${it.qty}x ${it.name}`;
     const right = `$${(it.price * it.qty).toFixed(2)}`;
@@ -219,11 +204,8 @@ function buildCashCutBytes(opts: {
   return b.build();
 }
 
-// ───────────────────── network transport ─────────────────────
-
 async function sendToPrinter(ip: string, port: number, data: Uint8Array): Promise<void> {
   const timeout = 5000;
-  // Try Cloudflare Workers socket
   try {
     const mod = "cloudflare" + ":" + "sockets";
     const { connect } = await (Function("s", "return import(s)")(mod) as Promise<any>);
@@ -237,9 +219,8 @@ async function sendToPrinter(ip: string, port: number, data: Uint8Array): Promis
     } finally {
       try { writer.releaseLock(); } catch { }
     }
-  } catch { /* fallthrough */ }
+  } catch { }
 
-  // Node.js path (local dev / VPS / Vercel Node runtime)
   try {
     const net = await import("node:net");
     return await new Promise<void>((resolve, reject) => {
@@ -256,36 +237,28 @@ async function sendToPrinter(ip: string, port: number, data: Uint8Array): Promis
   }
 }
 
-// ───────────────────── server functions ─────────────────────
-
 export const printSaleTicket = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => printInput.parse(d))
-  .handler(async ({ data, context }) => {
-    const { supabase } = context;
-    const [{ data: settings }, { data: sale }] = await Promise.all([
-      supabase.from("settings").select("*").limit(1).maybeSingle(),
-      supabase.from("sales").select("*, sale_items(*, sale_item_modifiers(*))").eq("id", data.saleId).single(),
+  .handler(async ({ data }) => {
+    const [settings, sale] = await Promise.all([
+      localApi.get<any>('/api/settings'),
+      localApi.get<any>(`/api/sales/${data.saleId}`),
     ]);
     if (!settings) throw new Error("Configuración no encontrada.");
     if (!settings.printer_enabled) throw new Error("La impresora térmica no está habilitada.");
     if (!settings.printer_ip) throw new Error("Falta la IP de la impresora.");
     if (!sale) throw new Error("Venta no encontrada.");
 
-    const { data: profile } = sale.user_id
-      ? await supabase.from("profiles").select("full_name").eq("id", sale.user_id).maybeSingle()
-      : { data: null as { full_name: string | null } | null };
-
     const buffer = buildTicketBytes({
       settings,
       folio: sale.folio,
       createdAt: sale.created_at ?? new Date().toISOString(),
-      cashier: profile?.full_name ?? "Cajero",
-      items: (sale.sale_items ?? []).map((i: any) => ({
+      cashier: sale.cashier_name ?? "Cajero",
+      items: (sale.items ?? []).map((i: any) => ({
         name: i.product_name ?? "Producto",
         qty: i.quantity,
         price: Number(i.unit_price),
-        modifiers: (i.sale_item_modifiers ?? []).map((m: any) => m.modifier_name).filter(Boolean),
+        modifiers: (i.modifiers ?? []).filter(Boolean),
       })),
       subtotal: Number(sale.subtotal),
       tax: Number(sale.tax ?? 0),
@@ -299,10 +272,8 @@ export const printSaleTicket = createServerFn({ method: "POST" })
   });
 
 export const testPrinter = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    const { supabase } = context;
-    const { data: settings } = await supabase.from("settings").select("*").limit(1).maybeSingle();
+  .handler(async () => {
+    const settings = await localApi.get<any>('/api/settings');
     if (!settings?.printer_ip) throw new Error("Configura la IP de la impresora primero.");
     const buffer = buildTicketBytes({
       settings,
@@ -317,27 +288,21 @@ export const testPrinter = createServerFn({ method: "POST" })
   });
 
 export const printCashCutReceipt = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => printCashCutInput.parse(d))
-  .handler(async ({ data, context }) => {
-    const { supabase } = context;
-    const [{ data: settings }, { data: register }] = await Promise.all([
-      supabase.from("settings").select("*").limit(1).maybeSingle(),
-      supabase.from("cash_register").select("*").eq("id", data.registerId).single(),
+  .handler(async ({ data }) => {
+    const [settings, register] = await Promise.all([
+      localApi.get<any>('/api/settings'),
+      localApi.get<any>(`/api/cash/cut/${data.registerId}`),
     ]);
     if (!settings) throw new Error("Configuración no encontrada.");
     if (!settings.printer_enabled) throw new Error("La impresora térmica no está habilitada.");
     if (!settings.printer_ip) throw new Error("Falta la IP de la impresora.");
     if (!register) throw new Error("Sesión de caja no encontrada.");
 
-    const { data: profile } = register.user_id
-      ? await supabase.from("profiles").select("full_name").eq("id", register.user_id).maybeSingle()
-      : { data: null as { full_name: string | null } | null };
-
     const buffer = buildCashCutBytes({
       settings,
       register,
-      cashier: profile?.full_name ?? "Cajero",
+      cashier: register.cashier_name ?? "Cajero",
     });
     await sendToPrinter(settings.printer_ip, settings.printer_port ?? 9100, buffer);
     return { ok: true };

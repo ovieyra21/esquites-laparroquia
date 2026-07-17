@@ -82,11 +82,9 @@ function POSPage() {
   const selectedCustomer = customers.find((c: any) => c.id === cart.customerId);
   const searchRef = useRef<HTMLInputElement>(null);
 
-  // ─── Sound Effect ───
   const playSaleSound = useCallback(() => {
     try {
       const ctx = new AudioContext();
-      // Cash register "cha-ching" — two quick rising tones
       const now = ctx.currentTime;
       [523.25, 659.25, 783.99].forEach((freq, i) => {
         const osc = ctx.createOscillator();
@@ -102,22 +100,18 @@ function POSPage() {
     } catch { /* Audio not available */ }
   }, []);
 
-  // ─── Keyboard Shortcuts ───
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
-      // Ignore if typing in an input
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
 
       const key = e.key.toLowerCase();
 
-      // / or Ctrl+K → focus search
       if (key === "/" || (e.ctrlKey && key === "k")) {
         e.preventDefault();
         searchRef.current?.focus();
         return;
       }
 
-      // Escape → clear search / close modal dialogs
       if (key === "escape") {
         if (query) { setQuery(""); return; }
         if (modProduct) { setModProduct(null); return; }
@@ -126,7 +120,6 @@ function POSPage() {
         return;
       }
 
-      // F1-F9 → select category by index
       const catNum = parseInt(key);
       if (key.startsWith("f") && key.length > 1) {
         const fn = parseInt(key.slice(1));
@@ -138,14 +131,12 @@ function POSPage() {
         }
       }
 
-      // Enter → open checkout if cart has items
       if (key === "enter" && cart.items.length > 0 && !checkoutOpen) {
         e.preventDefault();
         setCheckoutOpen(true);
         return;
       }
 
-      // Numpad + / - for last cart item qty
       if (cart.items.length > 0) {
         const lastItem = cart.items[cart.items.length - 1];
         if (key === "+" || key === "=") { cart.setQty(lastItem.uid, lastItem.quantity + 1); return; }
@@ -188,7 +179,6 @@ function POSPage() {
   };
 
   const handleConfirm = async (method: PaymentMethod, received?: number, change?: number) => {
-    // Terminal payment: open terminal dialog, save after payment confirmed
     if ((method === "tarjeta" || method === "digital") && hasTerminal) {
       const folio = nextFolio();
       const saleData = {
@@ -220,7 +210,6 @@ function POSPage() {
       return;
     }
 
-    // Digital payment (QR) without terminal: open QR dialog
     if (method === "digital") {
       const folio = nextFolio();
       const saleData = {
@@ -245,7 +234,6 @@ function POSPage() {
           }))
         }))
       };
-      // Pre-generate a saleId for the QR reference
       const tempId = crypto.randomUUID();
       setPendingDigitalSale({ ...saleData, saleId: tempId, folio });
       setCheckoutOpen(false);
@@ -284,17 +272,9 @@ function POSPage() {
       let saleId = "";
       let autoPrint = false;
 
-      if (!navigator.onLine) {
-        const buffer = JSON.parse(localStorage.getItem("buffered_sales") || "[]");
-        saleId = `offline-${crypto.randomUUID()}`;
-        buffer.push({ ...saleData, id: saleId, createdAt: new Date().toISOString() });
-        localStorage.setItem("buffered_sales", JSON.stringify(buffer));
-        toast.warning("Sin conexión. Venta guardada localmente.");
-      } else {
-        const result = await saveSale({ data: saleData });
-        saleId = result.saleId;
-        autoPrint = result.autoPrint;
-      }
+      const result = await saveSale({ data: saleData });
+      saleId = result.saleId;
+      autoPrint = result.autoPrint;
 
       const completedSale = {
         id: saleId,
@@ -308,7 +288,6 @@ function POSPage() {
         payment: method,
         received,
         change,
-        isBuffered: !navigator.onLine,
         discount: cart.discount,
         discountReason: cart.discountReason,
         isCourtesy: cart.isCourtesy,
@@ -361,6 +340,25 @@ function POSPage() {
   }
 
   const activeCat = categoryId ?? categories[0]?.id ?? null;
+
+  const CAT_PALETTE = [
+    { color: "#b8860b", bg: "rgba(184,134,11,0.1)", border: "rgba(184,134,11,0.25)", badge: "rgba(184,134,11,0.15)" },
+    { color: "#dc6803", bg: "rgba(220,104,3,0.1)", border: "rgba(220,104,3,0.25)", badge: "rgba(220,104,3,0.15)" },
+    { color: "#0891b2", bg: "rgba(8,145,178,0.1)", border: "rgba(8,145,178,0.25)", badge: "rgba(8,145,178,0.15)" },
+    { color: "#65a30d", bg: "rgba(101,163,13,0.1)", border: "rgba(101,163,13,0.25)", badge: "rgba(101,163,13,0.15)" },
+    { color: "#9333ea", bg: "rgba(147,51,234,0.1)", border: "rgba(147,51,234,0.25)", badge: "rgba(147,51,234,0.15)" },
+    { color: "#e11d48", bg: "rgba(225,29,72,0.1)", border: "rgba(225,29,72,0.25)", badge: "rgba(225,29,72,0.15)" },
+    { color: "#ea580c", bg: "rgba(234,88,12,0.1)", border: "rgba(234,88,12,0.25)", badge: "rgba(234,88,12,0.15)" },
+  ];
+  const catVisual = (catId: string | null | undefined) => {
+    if (!catId) return CAT_PALETTE[0];
+    const i = categories.findIndex((c: any) => c.id === catId);
+    return CAT_PALETTE[i >= 0 ? i % CAT_PALETTE.length : 0];
+  };
+  const catName = (catId: string | null | undefined) => {
+    if (!catId) return "";
+    return categories.find((c: any) => c.id === catId)?.name ?? "";
+  };
 
   return (
     <div className="flex h-screen w-full">
@@ -490,42 +488,75 @@ function POSPage() {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-3 space-y-2">
+        <div className="flex-1 overflow-y-auto p-3 space-y-2.5">
           {cart.items.length === 0 && (
             <div className="text-center text-muted-foreground py-16 px-4">
               <div className="text-5xl mb-3">🛒</div>
               <p className="text-sm">Selecciona productos para iniciar la venta.</p>
             </div>
           )}
-          {cart.items.map((i) => (
-            <div key={i.uid} className="bg-card rounded-xl p-3 gold-border">
-              <div className="flex items-start gap-2">
-                <div className="text-2xl">{i.product.emoji || "📦"}</div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-sm leading-tight">{i.product.name}</div>
-                  {i.modifiers.filter((m) => m.optionLabel).map((m, idx) => (
-                    <div key={idx} className="text-[11px] text-gold">+ {m.optionLabel} {m.extraPrice ? `(${fmt(m.extraPrice)})` : ""}</div>
-                  ))}
-                  <div className="text-xs text-muted-foreground mt-0.5">{fmt(i.unitPrice)} c/u</div>
+          {cart.items.map((i) => {
+            const cv = catVisual(i.product.category_id);
+            const cn = catName(i.product.category_id);
+            return (
+              <div key={i.uid} className="relative bg-card rounded-xl gold-border overflow-hidden transition-all active:scale-[0.99]">
+                <div className="absolute left-0 top-0 bottom-0 w-1" style={{ backgroundColor: cv.color }} />
+                <div className="p-3 pl-[18px]">
+                  <div className="flex items-start gap-3">
+                    <div className="size-11 rounded-full flex items-center justify-center text-xl shrink-0 overflow-hidden" style={{ backgroundColor: cv.bg }}>
+                      {i.product.image_url ? (
+                        <img src={i.product.image_url} alt="" className="size-full object-cover" />
+                      ) : (
+                        i.product.emoji || "📦"
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-sm leading-tight">{i.product.name}</div>
+                      {cn && (
+                        <span className="inline-block text-[10px] px-1.5 py-0.5 rounded-full mt-0.5 font-medium" style={{ backgroundColor: cv.badge, color: cv.color }}>
+                          {cn}
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => cart.removeItem(i.uid)}
+                      className="size-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition"
+                    >
+                      <Trash2 className="size-3.5" />
+                    </button>
+                  </div>
+                  {i.modifiers.filter((m) => m.optionLabel).length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {i.modifiers.filter((m) => m.optionLabel).map((m, idx) => (
+                        <span key={idx} className="text-[11px] px-2 py-0.5 rounded-full bg-gold/10 text-gold font-medium">
+                          {m.optionLabel}{m.extraPrice ? ` (+${fmt(m.extraPrice)})` : ""}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <div className="text-xs text-muted-foreground mt-1.5">{fmt(i.unitPrice)} c/u</div>
+                  <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/50">
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => cart.setQty(i.uid, i.quantity - 1)}
+                        className="size-9 rounded-lg bg-surface-2 flex items-center justify-center hover:bg-gold/10 hover:text-gold transition active:scale-95"
+                      >
+                        <Minus className="size-4" />
+                      </button>
+                      <span className="w-8 text-center font-bold text-base tabular-nums">{i.quantity}</span>
+                      <button
+                        onClick={() => cart.setQty(i.uid, i.quantity + 1)}
+                        className="size-9 rounded-lg bg-surface-2 flex items-center justify-center hover:bg-gold/10 hover:text-gold transition active:scale-95"
+                      >
+                        <Plus className="size-4" />
+                      </button>
+                    </div>
+                    <div className="font-bold gold-text text-base">{fmt(i.unitPrice * i.quantity)}</div>
+                  </div>
                 </div>
-                <button onClick={() => cart.removeItem(i.uid)} className="text-muted-foreground hover:text-destructive">
-                  <Trash2 className="size-4" />
-                </button>
               </div>
-              <div className="flex items-center justify-between mt-2">
-                <div className="flex items-center gap-2">
-                  <button onClick={() => cart.setQty(i.uid, i.quantity - 1)} className="size-8 rounded-lg bg-surface-2 flex items-center justify-center hover:bg-accent">
-                    <Minus className="size-3" />
-                  </button>
-                  <span className="w-6 text-center font-bold">{i.quantity}</span>
-                  <button onClick={() => cart.setQty(i.uid, i.quantity + 1)} className="size-8 rounded-lg bg-surface-2 flex items-center justify-center hover:bg-accent">
-                    <Plus className="size-3" />
-                  </button>
-                </div>
-                <div className="font-bold gold-text">{fmt(i.unitPrice * i.quantity)}</div>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         <div className="p-4 border-t border-border space-y-2">
@@ -610,7 +641,6 @@ function POSPage() {
                 tax: totals.tax,
                 total: totals.total,
                 payment: "digital" as PaymentMethod,
-                isBuffered: false,
               };
               addSale(completedSale);
               setLastSale(completedSale);
@@ -663,7 +693,6 @@ function POSPage() {
                 tax: totals.tax,
                 total: totals.total,
                 payment: "tarjeta" as PaymentMethod,
-                isBuffered: false,
               };
               addSale(completedSale);
               setLastSale(completedSale);

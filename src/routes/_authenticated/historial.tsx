@@ -136,7 +136,7 @@ function HistorialPage() {
   const handleReprint = (sale: SaleHistoryRow) => {
     if (!sale) return;
     const hash = buildTicketHash({
-      folio: String(sale.folio),
+      folio: sale.folio,
       createdAt: sale.created_at,
       cashier: sale.cashier_name,
       subtotal: sale.subtotal,
@@ -145,6 +145,10 @@ function HistorialPage() {
       paymentMethod: sale.payment_method,
       cashReceived: sale.cash_received,
       changeAmount: sale.change_amount,
+      discount: sale.discount,
+      discountReason: sale.discount_reason,
+      isCourtesy: sale.is_courtesy,
+      kitchenNotes: sale.kitchen_notes,
       items: [],
     });
     toast.info("Abre el ticket para reimprimir con detalle completo.");
@@ -257,6 +261,41 @@ function HistorialPage() {
               onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
               className="w-36 h-9 text-xs"
             />
+            <div className="flex gap-1 ml-1">
+              <button
+                type="button"
+                className={`px-2 h-9 text-xs rounded-md border transition-colors ${
+                  dateFrom === format(today, "yyyy-MM-dd") && dateTo === format(today, "yyyy-MM-dd")
+                    ? "bg-gold text-primary-foreground border-gold"
+                    : "border-border text-muted-foreground hover:bg-surface-2"
+                }`}
+                onClick={() => { setDateFrom(format(today, "yyyy-MM-dd")); setDateTo(format(today, "yyyy-MM-dd")); setPage(1); }}
+              >
+                Hoy
+              </button>
+              <button
+                type="button"
+                className={`px-2 h-9 text-xs rounded-md border transition-colors ${
+                  dateFrom === format(subDays(today, 7), "yyyy-MM-dd") && dateTo === format(today, "yyyy-MM-dd")
+                    ? "bg-gold text-primary-foreground border-gold"
+                    : "border-border text-muted-foreground hover:bg-surface-2"
+                }`}
+                onClick={() => { setDateFrom(format(subDays(today, 7), "yyyy-MM-dd")); setDateTo(format(today, "yyyy-MM-dd")); setPage(1); }}
+              >
+                7 días
+              </button>
+              <button
+                type="button"
+                className={`px-2 h-9 text-xs rounded-md border transition-colors ${
+                  dateFrom === format(subDays(today, 30), "yyyy-MM-dd") && dateTo === format(today, "yyyy-MM-dd")
+                    ? "bg-gold text-primary-foreground border-gold"
+                    : "border-border text-muted-foreground hover:bg-surface-2"
+                }`}
+                onClick={() => { setDateFrom(format(subDays(today, 30), "yyyy-MM-dd")); setDateTo(format(today, "yyyy-MM-dd")); setPage(1); }}
+              >
+                30 días
+              </button>
+            </div>
           </div>
 
           {/* Payment Filter */}

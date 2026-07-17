@@ -21,6 +21,10 @@ type TicketData = {
   paymentMethod: string;
   cashReceived?: number | null;
   changeAmount?: number | null;
+  discount?: number | null;
+  discountReason?: string | null;
+  isCourtesy?: boolean | null;
+  kitchenNotes?: string | null;
   items: { name: string; quantity: number; unitPrice: number; modifiers: string[] }[];
   businessName: string;
   slogan: string;
@@ -181,6 +185,13 @@ function TicketPage() {
             ))}
           </div>
 
+          {ticket.kitchenNotes && (
+            <div style={{ border: '1px dashed #999', padding: '3px 6px', margin: '4px 0', fontSize: '10px' }}>
+              <div style={{ fontWeight: 700, textTransform: 'uppercase', fontSize: '8px' }}>Notas cocina:</div>
+              <div>{ticket.kitchenNotes}</div>
+            </div>
+          )}
+
           <div className="ticket-divider" />
 
           {/* Totals */}
@@ -189,6 +200,20 @@ function TicketPage() {
               <span>Subtotal</span>
               <span>{fmt(ticket.subtotal)}</span>
             </div>
+            {ticket.discount && ticket.discount > 0 && (
+              <>
+                <div className="flex justify-between text-xs" style={{ color: '#059669', fontWeight: 700 }}>
+                  <span>Descuento</span>
+                  <span>- {fmt(ticket.discount)}</span>
+                </div>
+                {ticket.discountReason && (
+                  <div className="flex justify-between text-xs" style={{ fontStyle: 'italic', opacity: 0.75 }}>
+                    <span>Motivo:</span>
+                    <span>{ticket.discountReason}</span>
+                  </div>
+                )}
+              </>
+            )}
             <div className="flex justify-between text-xs">
               <span>Impuestos</span>
               <span>{fmt(ticket.tax)}</span>
@@ -197,6 +222,11 @@ function TicketPage() {
               <span>TOTAL</span>
               <span>{fmt(ticket.total)}</span>
             </div>
+            {ticket.isCourtesy && (
+              <div style={{ textAlign: 'center', fontWeight: 900, letterSpacing: '2px', padding: '4px 0', border: '1px dashed #000', margin: '4px 0', fontSize: '14px' }}>
+                *** CORTESÍA ***
+              </div>
+            )}
             <div className="flex justify-between text-xs pt-1">
               <span>Pago:</span>
               <span className="uppercase font-medium">{ticket.paymentMethod}</span>

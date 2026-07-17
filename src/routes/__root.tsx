@@ -4,7 +4,6 @@ import type { ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { Sidebar } from "@/components/Sidebar";
 import { ThemeProvider } from "@/components/theme-provider";
-import { OfflineSync } from "@/components/OfflineSync";
 import { Toaster } from "sonner";
 import { Button } from "@/components/ui/button";
 
@@ -96,7 +95,6 @@ function RootComponent() {
           {!isTicketRoute && <Sidebar />}
           <main className={isTicketRoute ? "w-full" : "flex-1 min-w-0"}>
             <Outlet />
-            {!isTicketRoute && <OfflineSync />}
             {!isTicketRoute && <Toaster position="top-right" richColors />}
           </main>
         </div>

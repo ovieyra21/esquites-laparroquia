@@ -297,6 +297,80 @@ export async function printViaProxy(settings: PrintSettings, bytes: Uint8Array):
   }
 }
 
+// ───── Employee Payment Ticket ─────
+
+export function buildEmployeePaymentBytes(opts: {
+  employeeName: string;
+  amount: number;
+  period: string;
+  paymentDate: string;
+  notes?: string;
+}, settings: PrintSettings): Uint8Array {
+  const widthMm = settings.printer_width === 58 ? 58 : 80;
+  const b = new TicketBuilder(widthMm);
+  const date = new Date(opts.paymentDate);
+  const dateStr = date.toLocaleDateString("es-MX");
+  const timeStr = date.toLocaleTimeString("es-MX", { hour12: false });
+
+  b.logo(settings);
+  b.align("center").bold(true).double(true)
+    .line(settings.business_name ?? "Esquites La Parroquia")
+    .double(false).bold(false);
+  if (settings.slogan) b.line(settings.slogan);
+  b.feed(1);
+
+  b.bold(true).double(true)
+    .line("COMPROBANTE DE PAGO")
+    .double(false).bold(false);
+  b.divider();
+
+  b.align("left")
+    .row("Fecha:", dateStr)
+    .row("Hora:", timeStr)
+    .divider()
+    .bold(true).row("Empleado:", opts.employeeName).bold(false)
+    .row("Periodo:", opts.period)
+    .divider();
+
+  b.bold(true).double(true)
+    .row("PAGADO", `$${opts.amount.toFixed(2)}`)
+    .double(false).bold(false);
+
+  if (opts.notes) {
+    b.divider().line("Notas:").line(opts.notes);
+  }
+
+  b.divider().align("center").feed(1);
+  b.line("Recibi de conformidad");
+  b.feed(2);
+  b.line("___________________________");
+  b.line("Firma del empleado");
+  b.feed(1);
+  b.line("Gracias por su dedicacion");
+  b.line("esquiteslaparroquia.mx");
+
+  if (settings.auto_cut !== false) b.cut();
+  else b.feed(4);
+  return b.build();
+}
+
+/** Print an employee payment ticket via proxy or return "browser" fallback */
+export async function smartPrintEmployeePayment(
+  opts: { employeeName: string; amount: number; period: string; paymentDate: string; notes?: string },
+  settings?: PrintSettings | null,
+): Promise<"proxy" | "browser"> {
+  if (proxyPrintingEnabled(settings)) {
+    try {
+      await printViaProxy(settings!, buildEmployeePaymentBytes(opts, settings!));
+      toast.success("Comprobante enviado a la impresora");
+      return "proxy";
+    } catch (e: any) {
+      toast.warning(`Impresora no disponible: ${e.message}. Abriendo vista previa.`);
+    }
+  }
+  return "browser";
+}
+
 export function proxyPrintingEnabled(settings?: PrintSettings | null): boolean {
   return !!settings && settings.print_mode !== "navegador" && !!settings.printer_enabled;
 }

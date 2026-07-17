@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { crmApi } from "@/lib/crm.functions";
-import { supabase } from "@/integrations/supabase/client";
+import { localApi } from "@/lib/api/api-client";
 import {
   Users, Search, UserPlus, Phone, Mail, Award,
   History, Edit2, Loader2, Save, ShoppingBag, Calendar, DollarSign,
@@ -27,26 +27,21 @@ function ClientesPage() {
     queryFn: () => crmApi.getCustomers(),
   });
 
-  // Customer purchase stats
   const { data: customerStats } = useQuery({
     queryKey: ["customer-purchase-stats"],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
-        .from("sales")
-        .select("customer_id, total, created_at")
-        .not("customer_id", "is", null)
-        .eq("cancelled", false);
-
-      if (error || !data) return {} as Record<string, { count: number; total: number; lastVisit: string }>;
-
-      const map: Record<string, { count: number; total: number; lastVisit: string }> = {};
-      for (const s of data) {
-        if (!map[s.customer_id]) map[s.customer_id] = { count: 0, total: 0, lastVisit: s.created_at };
-        map[s.customer_id].count += 1;
-        map[s.customer_id].total += Number(s.total ?? 0);
-        if (s.created_at > map[s.customer_id].lastVisit) map[s.customer_id].lastVisit = s.created_at;
-      }
-      return map;
+      try {
+        const data = await localApi.get<any[]>('/api/sales');
+        const customerSales = (data ?? []).filter((s: any) => s.customer_id && !s.cancelled);
+        const map: Record<string, { count: number; total: number; lastVisit: string }> = {};
+        for (const s of customerSales) {
+          if (!map[s.customer_id]) map[s.customer_id] = { count: 0, total: 0, lastVisit: s.created_at };
+          map[s.customer_id].count += 1;
+          map[s.customer_id].total += Number(s.total ?? 0);
+          if (s.created_at > map[s.customer_id].lastVisit) map[s.customer_id].lastVisit = s.created_at;
+        }
+        return map;
+      } catch { return {}; }
     },
     staleTime: 60_000,
   });
@@ -184,7 +179,6 @@ function CustomerCard({
 
   return (
     <div className="rounded-2xl border border-border bg-card hover:border-gold/30 transition">
-      {/* Main row */}
       <button onClick={onToggleExpand} className="w-full p-4 text-left">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
@@ -216,7 +210,6 @@ function CustomerCard({
         </div>
       </button>
 
-      {/* Expanded: stats detail */}
       {isExpanded && stats && (
         <div className="px-4 pb-4 border-t border-border">
           <div className="grid grid-cols-3 gap-3 pt-3">

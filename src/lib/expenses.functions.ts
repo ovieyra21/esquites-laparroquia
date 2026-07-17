@@ -1,8 +1,23 @@
+// src/lib/expenses.functions.ts
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { localApi } from "./api/api-client";
 
-// ─── Input Schemas ───
+export type Expense = {
+  id: string;
+  amount: number;
+  category: string;
+  description: string | null;
+  supplier: string | null;
+  expense_date: string;
+  payment_method: string;
+  photo_url: string | null;
+  created_at: string;
+  user_id: string;
+  status: string;
+  paid_to: string | null;
+  payment_period: string | null;
+};
 
 const createExpenseInput = z.object({
   amount: z.number().positive(),
@@ -12,53 +27,15 @@ const createExpenseInput = z.object({
   expenseDate: z.string(),
   paymentMethod: z.string().max(50).default("efectivo"),
   photoUrl: z.string().max(1000).optional().nullable(),
-  ocrText: z.string().max(2000).optional().nullable(),
+  status: z.enum(["pagado", "pendiente"]).default("pagado"),
+  paidTo: z.string().max(200).optional().nullable(),
+  paymentPeriod: z.string().max(50).optional().nullable(),
 });
-
-const listExpensesInput = z.object({
-  dateFrom: z.string().optional().nullable(),
-  dateTo: z.string().optional().nullable(),
-  category: z.string().optional().nullable(),
-  page: z.number().min(1).default(1),
-  pageSize: z.number().min(5).max(100).default(20),
-});
-
-const deleteExpenseInput = z.object({ id: z.string().uuid() });
-const summaryInput = z.object({ dateFrom: z.string().optional().nullable(), dateTo: z.string().optional().nullable() });
-
-// ─── Types ───
-
-export type Expense = {
-  id: string;
-  amount: number;
-  description: string | null;
-  category: string;
-  supplier: string | null;
-  expense_date: string;
-  payment_method: string;
-  photo_url: string | null;
-  ocr_text: string | null;
-  created_at: string;
-  user_id: string;
-};
-
-export type ExpenseSummary = {
-  total: number;
-  count: number;
-  byCategory: { category: string; total: number; count: number }[];
-  byMonth: { month: string; total: number }[];
-};
-
-// ─── Server Functions ───
 
 export const createExpense = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => createExpenseInput.parse(d))
-
-  .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
-    const { error } = await supabase.from("expenses").insert({
-      user_id: userId,
+  .validator((d: unknown) => createExpenseInput.parse(d))
+  .handler(async ({ data }) => {
+    return localApi.post('/api/expenses', {
       amount: data.amount,
       description: data.description || null,
       category: data.category,
@@ -66,88 +43,59 @@ export const createExpense = createServerFn({ method: "POST" })
       expense_date: data.expenseDate,
       payment_method: data.paymentMethod,
       photo_url: data.photoUrl || null,
-      ocr_text: data.ocrText || null,
-    } as any);
-    if (error) throw new Error(error.message);
-    return { ok: true };
+      status: data.status,
+      paid_to: data.paidTo || null,
+      payment_period: data.paymentPeriod || null,
+    });
   });
+
+const listExpensesInput = z.object({
+  dateFrom: z.string().optional().nullable(),
+  dateTo: z.string().optional().nullable(),
+  category: z.string().optional().nullable(),
+  status: z.string().optional().nullable(),
+  page: z.number().min(1).default(1),
+  pageSize: z.number().min(5).max(100).default(20),
+});
 
 export const listExpenses = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => listExpensesInput.parse(d))
-  .handler(async ({ data, context }) => {
-    const { supabase } = context;
-    const { dateFrom, dateTo, category, page, pageSize } = data;
-    const from = (page - 1) * pageSize;
-    const to = from + pageSize - 1;
+  .handler(async ({ data }) => {
+    const params = new URLSearchParams();
+    if (data.page) params.set('page', String(data.page));
+    if (data.pageSize) params.set('limit', String(data.pageSize));
+    if (data.dateFrom) params.set('dateFrom', data.dateFrom);
+    if (data.dateTo) params.set('dateTo', data.dateTo);
+    if (data.category) params.set('category', data.category);
+    if (data.status) params.set('status', data.status);
 
-    let query = supabase
-      .from("expenses")
-      .select("*", { count: "exact" })
-      .order("expense_date", { ascending: false })
-      .range(from, to);
-
-    if (dateFrom) query = query.gte("expense_date", dateFrom);
-    if (dateTo) query = query.lte("expense_date", dateTo);
-    if (category) query = query.eq("category", category);
-
-    const { data: expenses, count, error } = await query;
-    if (error) throw new Error(error.message);
-
-    return { expenses: (expenses ?? []) as Expense[], total: count ?? 0, page, pageSize };
+    return localApi.get(`/api/expenses?${params.toString()}`);
   });
+
+const deleteExpenseInput = z.object({ id: z.string() });
 
 export const deleteExpense = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => deleteExpenseInput.parse(d))
-  .handler(async ({ data, context }) => {
-    const { supabase } = context;
-    const { error } = await supabase.from("expenses").delete().eq("id", data.id);
-    if (error) throw new Error(error.message);
-    return { ok: true };
+  .handler(async ({ data }) => {
+    return localApi.delete(`/api/expenses/${data.id}`);
   });
 
+const summaryInput = z.object({ 
+  dateFrom: z.string().optional().nullable(), 
+  dateTo: z.string().optional().nullable() 
+});
+
 export const getExpenseSummary = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => summaryInput.parse(d))
-  .handler(async ({ data, context }) => {
-    const { supabase } = context;
-    const { dateFrom, dateTo } = data;
+  .handler(async ({ data }) => {
+    const params = new URLSearchParams();
+    if (data.dateFrom) params.set('dateFrom', data.dateFrom);
+    if (data.dateTo) params.set('dateTo', data.dateTo);
+    return localApi.get(`/api/expenses/summary?${params.toString()}`);
+  });
 
-    let query = supabase.from("expenses").select("amount, category, expense_date");
-    if (dateFrom) query = query.gte("expense_date", dateFrom);
-    if (dateTo) query = query.lte("expense_date", dateTo);
-
-    const { data: expenses, error } = await query;
-    if (error) throw new Error(error.message);
-
-    const all = expenses ?? [];
-    const total = all.reduce((s, e) => s + Number((e as any).amount), 0);
-
-    // By category
-    const catMap: Record<string, { total: number; count: number }> = {};
-    for (const e of all) {
-      const cat = (e as any).category || "otros";
-      if (!catMap[cat]) catMap[cat] = { total: 0, count: 0 };
-      catMap[cat].total += Number((e as any).amount);
-      catMap[cat].count += 1;
-    }
-
-    // By month
-    const monthMap: Record<string, number> = {};
-    for (const e of all) {
-      const m = ((e as any).expense_date as string).slice(0, 7);
-      monthMap[m] = (monthMap[m] || 0) + Number((e as any).amount);
-    }
-
-    return {
-      total,
-      count: all.length,
-      byCategory: Object.entries(catMap)
-        .map(([category, val]) => ({ category, ...val }))
-        .sort((a, b) => b.total - a.total),
-      byMonth: Object.entries(monthMap)
-        .map(([month, total]) => ({ month, total }))
-        .sort((a, b) => a.month.localeCompare(b.month)),
-    } as ExpenseSummary;
+export const payExpense = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => z.object({ id: z.string() }).parse(d))
+  .handler(async ({ data }) => {
+    return localApi.post(`/api/expenses/${data.id}/pay`);
   });

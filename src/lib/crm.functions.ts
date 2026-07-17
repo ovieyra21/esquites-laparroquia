@@ -1,44 +1,18 @@
-
-import { supabase } from "@/integrations/supabase/client";
+// src/lib/crm.functions.ts
+import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
+import { localApi } from "./api/api-client";
 
 export const crmApi = {
-    async getCustomers() {
-        const { data, error } = await (supabase as any)
-            .from("customers")
-            .select("*")
-            .order("name", { ascending: true });
-        if (error) throw error;
-        return data;
-    },
+  async getCustomers() {
+    return localApi.get('/api/customers');
+  },
 
-    async createCustomer(customer: { name: string, phone?: string, email?: string }) {
-        const { data, error } = await (supabase as any)
-            .from("customers")
-            .insert([customer])
-            .select()
-            .single();
-        if (error) throw error;
-        return data;
-    },
+  async createCustomer(data: any) {
+    return localApi.post('/api/customers', data);
+  },
 
-    async updateCustomer(id: string, updates: any) {
-        const { data, error } = await (supabase as any)
-            .from("customers")
-            .update(updates)
-            .eq("id", id)
-            .select()
-            .single();
-        if (error) throw error;
-        return data;
-    },
-
-    async findCustomerByPhone(phone: string) {
-        const { data, error } = await (supabase as any)
-            .from("customers")
-            .select("*")
-            .eq("phone", phone)
-            .maybeSingle();
-        if (error) throw error;
-        return data;
-    }
+  async updateCustomer(id: string, data: any) {
+    return localApi.put(`/api/customers/${id}`, data);
+  },
 };

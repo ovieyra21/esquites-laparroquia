@@ -3,20 +3,20 @@ import { ShoppingCart, History, LayoutDashboard, Box, QrCode, Settings, LogOut, 
 import { Logo } from "./Logo";
 import { ThemeToggle } from "./ThemeToggle";
 import { useAuth, hasRole } from "@/hooks/use-auth";
-import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useUI } from "@/store/ui";
+import { localApi } from "@/lib/api/api-client";
 
 const NAV = [
   { to: "/pos", label: "Punto de Venta", icon: ShoppingCart, roles: ["admin", "cajero", "supervisor"] as const },
+  { to: "/cocina", label: "Cocina", icon: ChefHat, roles: ["admin", "supervisor", "cocinero"] as const, badge: "kds" },
   { to: "/caja", label: "Caja", icon: Wallet, roles: ["admin", "cajero", "supervisor"] as const },
   { to: "/historial", label: "Historial", icon: History, roles: ["admin", "supervisor"] as const },
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["admin", "supervisor"] as const },
   { to: "/inventario", label: "Inventario", icon: Box, roles: ["admin", "supervisor"] as const },
   { to: "/productos", label: "Productos", icon: Package, roles: ["admin", "supervisor"] as const },
   { to: "/gastos", label: "Gastos", icon: Receipt, roles: ["admin", "supervisor"] as const },
-  { to: "/cocina", label: "Cocina", icon: ChefHat, roles: ["admin", "supervisor", "cocinero"] as const, badge: "kds" },
   { to: "/clientes", label: "Clientes", icon: Users, roles: ["admin", "supervisor"] as const },
   { to: "/configuracion", label: "Configuración", icon: Settings, roles: ["admin"] as const },
 ];
@@ -26,16 +26,14 @@ export function Sidebar() {
   const navigate = useNavigate();
   const { user, roles, fullName } = useAuth();
 
-  // Pending kitchen orders count
   const { data: kdsCount } = useQuery({
     queryKey: ["kds-sidebar-count"],
     queryFn: async () => {
-      const { count, error } = await supabase
-        .from("sales")
-        .select("*", { count: "exact", head: true })
-        .in("kds_status", ["pendiente", "preparando"]);
-      if (error) return 0;
-      return count ?? 0;
+      try {
+        const sales = await localApi.get<any[]>('/api/sales');
+        const pending = (sales || []).filter((s: any) => { const k = s.kds_status || "pendiente"; return k === "pendiente" || k === "preparando"; });
+        return pending.length;
+      } catch { return 0; }
     },
     refetchInterval: 20_000,
   });
@@ -50,13 +48,11 @@ export function Sidebar() {
   const visible = NAV.filter((n) => roles.length === 0 || hasRole(roles as any, ...(n.roles as any)));
 
   const onLogout = async () => {
-    await supabase.auth.signOut();
     toast.success("Sesión cerrada");
     navigate({ to: "/auth", replace: true });
   };
 
   if (sidebarHidden) {
-    // Botón flotante para volver a mostrar el menú
     return (
       <button
         onClick={toggleSidebar}
